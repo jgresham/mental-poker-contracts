@@ -204,6 +204,7 @@ library BigNumbers {
     }
 
     /**
+     * @notice This function is not optimized for large (2048 bit) numbers and will break gas limits.
      * @notice BigNumber division: a / b.
      * @dev div: takes two BigNumbers and divides them.
      *      This is an expensive operation and should be used with caution.
@@ -264,6 +265,7 @@ library BigNumbers {
     }
 
     /**
+     * @notice This function is not optimized for large (2048 bit) numbers and will break gas limits.
      * @notice Modular inverse: finds x such that (a * x) % n = 1
      * @dev modInverse: Computes the modular multiplicative inverse of a modulo n.
      *      Uses the Extended Euclidean Algorithm to find the inverse.

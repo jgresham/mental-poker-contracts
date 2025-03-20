@@ -50,14 +50,14 @@ contract CryptoUtils {
      * @param privateKey The private key of the player decrypting the card
      * @return The decrypted card
      */
-    function decryptCard(EncryptedCard memory encryptedCard, uint256 privateKey)
-        public
-        view
-        returns (BigNumber memory)
-    {
-        BigNumber memory c1PowPrivateKey =
-            BigNumbers.modexp(encryptedCard.c1, BigNumbers.init(privateKey, false), P_2048);
-        BigNumber memory c1Inverse = modInverse(c1PowPrivateKey, P_2048);
+    function verifyDecryptCard(
+        EncryptedCard memory encryptedCard,
+        BigNumber memory privateKey,
+        BigNumber memory c1Inverse
+    ) public view returns (BigNumber memory) {
+        BigNumber memory c1PowPrivateKey = BigNumbers.modexp(encryptedCard.c1, privateKey, P_2048);
+        bool verifyResult = BigNumbers.modinvVerify(c1PowPrivateKey, P_2048, c1Inverse);
+        require(verifyResult, "Invalid modular inverse");
         return BigNumbers.modmul(encryptedCard.c2, c1Inverse, P_2048);
     }
 
