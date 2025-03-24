@@ -7,6 +7,7 @@ import "../src/PokerHandEvaluator.sol";
 
 contract TexasHoldemRoomTest is Test {
     TexasHoldemRoom public room;
+    CryptoUtils public cryptoUtils;
     address public player1;
     address public player2;
     address public player3;
@@ -14,7 +15,8 @@ contract TexasHoldemRoomTest is Test {
     uint256 constant INITIAL_BALANCE = 1000;
 
     function setUp() public {
-        room = new TexasHoldemRoom(SMALL_BLIND, false);
+        cryptoUtils = new CryptoUtils();
+        room = new TexasHoldemRoom(address(cryptoUtils), SMALL_BLIND, false);
 
         // Create test accounts
         player1 = makeAddr("player1");

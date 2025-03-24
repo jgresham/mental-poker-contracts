@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.23;
 
 import "./PokerHandEvaluator.sol";
 import "./BigNumbers/BigNumbers.sol";
+import "./CryptoUtils.sol";
 
 contract TexasHoldemRoom {
     using BigNumbers for BigNumber;
@@ -38,13 +39,14 @@ contract TexasHoldemRoom {
         uint256 totalRoundBet;
         bool hasFolded;
         bool isAllIn;
-        bytes32[2] holeCards;
+        bytes32[2] cards;
+        uint8 seatPosition;
     }
 
     struct GameState {
         GameStage stage;
         uint256 pot;
-        uint256 currentStageBet;
+        uint256 currentStageBet; // per player (to stay in the round)
         uint256 smallBlind;
         uint256 bigBlind;
         uint256 dealerPosition;
@@ -57,14 +59,17 @@ contract TexasHoldemRoom {
 
     uint256 public constant MAX_PLAYERS = 10;
     uint256 public constant MIN_PLAYERS = 2;
+    uint8 public constant EMPTY_SEAT = 255;
 
+    CryptoUtils public cryptoUtils;
     Player[MAX_PLAYERS] public players;
+    uint8[MAX_PLAYERS] public seatPositionToPlayerIndex;
     uint256 public numPlayers;
     GameState public gameState;
     bool public isPrivate;
 
     PokerHandEvaluator public handEvaluator;
-    mapping(address => PokerHandEvaluator.Card[2]) public revealedHoleCards;
+    mapping(address => PokerHandEvaluator.Card[2]) public revealedCards;
     mapping(address => bytes32) public commitments;
     mapping(address => bytes32) public secrets;
 
@@ -75,8 +80,15 @@ contract TexasHoldemRoom {
     event HandRevealed(address indexed player, uint8 card1Rank, uint8 card2Rank);
     event EncryptedShuffleSubmitted(address indexed player, BigNumber[] encryptedShuffle);
     event DecryptionValuesSubmitted(address indexed player, uint8[] cardIndexes, BigNumber[] decryptionValues);
+    event PlayerCardsRevealed(address indexed player, string card1, string card2);
+    event PlayerCardsRevealedBigInts(address indexed player, BigNumber card1, BigNumber card2);
+    event FlopRevealed(address indexed player, string card1, string card2, string card3);
+    event TurnRevealed(address indexed player, string card1);
+    event RiverRevealed(address indexed player, string card1);
+    event THP_Log(string message);
 
-    constructor(uint256 _smallBlind, bool _isPrivate) {
+    constructor(address _cryptoUtils, uint256 _smallBlind, bool _isPrivate) {
+        cryptoUtils = CryptoUtils(_cryptoUtils);
         gameState.smallBlind = _smallBlind;
         gameState.bigBlind = _smallBlind * 2;
         gameState.stage = GameStage.Idle;
@@ -89,6 +101,9 @@ contract TexasHoldemRoom {
         // set dealer position to 0
         gameState.dealerPosition = 0;
         gameState.currentPlayerIndex = 0;
+        for (uint256 i = 0; i < MAX_PLAYERS; i++) {
+            seatPositionToPlayerIndex[i] = EMPTY_SEAT;
+        }
     }
 
     // fully new function
@@ -103,6 +118,39 @@ contract TexasHoldemRoom {
         revert(errorMessage);
     }
 
+    /**
+     * @dev Finds the next active player index to the left of the current player using seat position
+     * @dev Skips players that have folded or are all-in
+     * @dev Returns the current player index if no active players are found
+     */
+    function getNextActivePlayer(uint256 currentPlayerIndex, bool requireActive) public view returns (uint256) {
+        // get the current player's seat position
+        uint8 currentSeatPosition = players[currentPlayerIndex].seatPosition; // 1, 1
+        // loop over the players in the ascending order of their seat positions
+        // until we find an active player
+        // TODO: create a number of players that played in the current round and use that for the modulo
+        // and for the next seat index. (don't use players that joined the game after the round started)
+        uint256 nextSeatIndex = (currentSeatPosition + 1) % numPlayers; // 2 % 2 = 0
+        if (!requireActive) {
+            return seatPositionToPlayerIndex[nextSeatIndex];
+        } else {
+            while (nextSeatIndex != currentSeatPosition) {
+                // TODO: add a status for a player that has joined, but did not start the round
+                uint8 playerIndex = seatPositionToPlayerIndex[nextSeatIndex];
+                if (playerIndex != EMPTY_SEAT) {
+                    Player memory checkPlayer = players[playerIndex];
+                    // TODO: check if the player has cards (joined before the round started)
+                    if (!checkPlayer.hasFolded && !checkPlayer.isAllIn) {
+                        return playerIndex;
+                    }
+                }
+                nextSeatIndex = (nextSeatIndex + 1) % numPlayers;
+            }
+            // if no active players are found, return the current player
+            return currentPlayerIndex;
+        }
+    }
+
     // fully new function
     function joinGame() external {
         require(numPlayers < MAX_PLAYERS, "Room is full");
@@ -114,6 +162,11 @@ contract TexasHoldemRoom {
         }
 
         numPlayers++;
+        // Find the first empty seat
+        uint8 seatPosition = 0;
+        while (seatPositionToPlayerIndex[seatPosition] != EMPTY_SEAT) {
+            seatPosition++;
+        }
         players[numPlayers - 1] = Player({
             addr: msg.sender,
             chips: 1000,
@@ -121,8 +174,10 @@ contract TexasHoldemRoom {
             totalRoundBet: 0,
             hasFolded: false,
             isAllIn: false,
-            holeCards: [bytes32(0), bytes32(0)]
+            cards: [bytes32(0), bytes32(0)],
+            seatPosition: seatPosition
         });
+        seatPositionToPlayerIndex[seatPosition] = uint8(numPlayers - 1);
 
         if (numPlayers >= MIN_PLAYERS && !isPrivate) {
             _progressGame();
@@ -165,20 +220,26 @@ contract TexasHoldemRoom {
         for (uint256 i = 0; i < cardIndexes.length; i++) {
             gameState.encryptedDeck[cardIndexes[i]] = decryptionValues[i];
         }
+
+        if (gameState.currentPlayerIndex == 1) {
+            if (gameState.stage == GameStage.RevealFlop) {
+                // convert the decrypted cards to a string
+                string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[5]);
+                string memory card2 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[6]);
+                string memory card3 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[7]);
+                emit FlopRevealed(msg.sender, card1, card2, card3);
+            } else if (gameState.stage == GameStage.RevealTurn) {
+                // convert the decrypted cards to a string
+                string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[9]);
+                emit TurnRevealed(msg.sender, card1);
+            } else if (gameState.stage == GameStage.RevealRiver) {
+                // convert the decrypted cards to a string
+                string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[11]);
+                emit RiverRevealed(msg.sender, card1);
+            }
+        }
+
         _progressGame();
-        // gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % numPlayers;
-        // // if we are back at the dealer, move to the next stage
-        // if (gameState.currentPlayerIndex == gameState.dealerPosition) {
-        // if (gameState.stage == GameStage.RevealDeal) {
-        //     gameState.stage = GameStage.Preflop;
-        // } else if (gameState.stage == GameStage.RevealFlop) {
-        //     gameState.stage = GameStage.Flop;
-        // } else if (gameState.stage == GameStage.RevealTurn) {
-        //     gameState.stage = GameStage.Turn;
-        // } else if (gameState.stage == GameStage.RevealRiver) {
-        //     gameState.stage = GameStage.River;
-        // }
-        // }
     }
 
     function startNewHand() external {
@@ -200,7 +261,7 @@ contract TexasHoldemRoom {
             players[i].totalRoundBet = 0;
             players[i].hasFolded = false;
             players[i].isAllIn = false;
-            players[i].holeCards = [bytes32(0), bytes32(0)];
+            players[i].cards = [bytes32(0), bytes32(0)];
         }
 
         // Post blinds
@@ -214,6 +275,7 @@ contract TexasHoldemRoom {
         emit NewStage(GameStage.Preflop);
     }
 
+    // mostly fully tested function
     function submitAction(Action action, uint256 raiseAmount) external {
         require(
             gameState.stage == GameStage.Preflop || gameState.stage == GameStage.Flop
@@ -248,23 +310,53 @@ contract TexasHoldemRoom {
         _progressGame();
     }
 
-    function submitEncryptedHoleCards(bytes32[2] calldata cards) external {
-        require(gameState.stage == GameStage.Preflop, "Wrong stage");
+    function revealMyCards(
+        CryptoUtils.EncryptedCard memory encryptedCard1,
+        CryptoUtils.EncryptedCard memory encryptedCard2,
+        BigNumber memory privateKey,
+        BigNumber memory c1Inverse
+    ) external {
         uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
-        require(players[playerIndex].holeCards[0] == bytes32(0), "Cards already submitted");
+        require(!players[playerIndex].hasFolded, "Player folded");
 
-        players[playerIndex].holeCards = cards;
+        // Create an instance of CryptoUtils to call its functions
+        BigNumber memory decryptedCard1 = cryptoUtils.verifyDecryptCard(encryptedCard1, privateKey, c1Inverse);
+        BigNumber memory decryptedCard2 = cryptoUtils.verifyDecryptCard(encryptedCard2, privateKey, c1Inverse);
+        // emit PlayerCardsRevealedBigInts(msg.sender, decryptedCard1, decryptedCard2);
+
+        // convert the decrypted cards to a string
+        string memory card1 = cryptoUtils.decodeBigintMessage(decryptedCard1);
+        string memory card2 = cryptoUtils.decodeBigintMessage(decryptedCard2);
+
+        emit PlayerCardsRevealed(msg.sender, card1, card2);
+        // TODO: set the cards on the encryptedDeck?
+        // return true if the encrypted cards match the decrypted cards from the deck?
+
+        // // Convert the encrypted cards to bytes32 format for storage
+        // bytes32[2] memory cardBytes;
+        // // You would need to implement a conversion function or logic here
+        // // For example: cardBytes[0] = bytes32(abi.encode(encryptedCard1));
+        // // cardBytes[1] = bytes32(abi.encode(encryptedCard2));
+        // players[playerIndex].cards = cardBytes;
     }
 
-    function submitHoleCardCommitment(bytes32 commitment) external {
+    function submitEncryptedCards(bytes32[2] calldata cards) external {
         require(gameState.stage == GameStage.Preflop, "Wrong stage");
         uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
-        require(players[playerIndex].holeCards[0] == bytes32(0), "Cards already submitted");
+        require(players[playerIndex].cards[0] == bytes32(0), "Cards already submitted");
+
+        players[playerIndex].cards = cards;
+    }
+
+    function submitCardsCommitment(bytes32 commitment) external {
+        require(gameState.stage == GameStage.Preflop, "Wrong stage");
+        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
+        require(players[playerIndex].cards[0] == bytes32(0), "Cards already submitted");
 
         commitments[msg.sender] = commitment;
     }
 
-    function revealHoleCards(PokerHandEvaluator.Card[2] memory cards, bytes32 secret) external {
+    function revealCards(PokerHandEvaluator.Card[2] memory cards, bytes32 secret) external {
         require(gameState.stage == GameStage.Showdown, "Not showdown stage");
         uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
         require(!players[playerIndex].hasFolded, "Player folded");
@@ -274,8 +366,8 @@ contract TexasHoldemRoom {
         require(commitment == commitments[msg.sender], "Invalid revelation");
 
         // Copy cards one by one
-        revealedHoleCards[msg.sender][0] = cards[0];
-        revealedHoleCards[msg.sender][1] = cards[1];
+        revealedCards[msg.sender][0] = cards[0];
+        revealedCards[msg.sender][1] = cards[1];
         secrets[msg.sender] = secret;
 
         emit HandRevealed(msg.sender, cards[0].rank, cards[1].rank);
@@ -290,7 +382,7 @@ contract TexasHoldemRoom {
         // Get active players who revealed their hands
         for (uint256 i = 0; i < numPlayers; i++) {
             address playerAddr = players[i].addr;
-            if (!players[i].hasFolded && revealedHoleCards[playerAddr][0].rank != 0) {
+            if (!players[i].hasFolded && revealedCards[playerAddr][0].rank != 0) {
                 activePlayers[activeCount] = playerAddr;
                 activeCount++;
             }
@@ -314,8 +406,7 @@ contract TexasHoldemRoom {
 
         for (uint256 i = 0; i < activeCount; i++) {
             address playerAddr = activePlayers[i];
-            PokerHandEvaluator.Hand memory hand =
-                handEvaluator.evaluateHand(revealedHoleCards[playerAddr], communityCards);
+            PokerHandEvaluator.Hand memory hand = handEvaluator.evaluateHand(revealedCards[playerAddr], communityCards);
 
             if (hand.score > highestScore) {
                 // New highest hand
@@ -349,7 +440,7 @@ contract TexasHoldemRoom {
         // Clear revealed cards and commitments
         for (uint256 i = 0; i < numPlayers; i++) {
             address playerAddr = players[i].addr;
-            delete revealedHoleCards[playerAddr];
+            delete revealedCards[playerAddr];
             delete commitments[playerAddr];
             delete secrets[playerAddr];
         }
@@ -399,31 +490,43 @@ contract TexasHoldemRoom {
                 || gameState.stage == GameStage.RevealFlop || gameState.stage == GameStage.RevealTurn
                 || gameState.stage == GameStage.RevealRiver
         ) {
-            // if we are back at the dealer, move to the next stage
+            emit THP_Log("_progressGame() if Reveal stage true");
+            // if the next reveal player is back at the dealer, move to the next stage
             // since the dealer starts all reveal stages
-            if (gameState.currentPlayerIndex == gameState.dealerPosition) {
+            bool requireActive = false;
+            uint256 nextRevealPlayer = getNextActivePlayer(gameState.currentPlayerIndex, requireActive);
+            if (nextRevealPlayer == gameState.dealerPosition) {
+                emit THP_Log("_progressGame() if nextRevealPlayer == gameState.dealerPosition");
                 // after a reveal stage, we enter a betting stage
                 // always the first active player LEFT of the dealer starts all betting stages
-                uint256 nextPlayer = _findNextActivePlayer(gameState.currentPlayerIndex);
-                gameState.currentPlayerIndex = nextPlayer;
+                bool requireActiveForBetting = true;
+                uint256 nextActivePlayer = getNextActivePlayer(gameState.dealerPosition, requireActiveForBetting);
+                gameState.currentPlayerIndex = nextActivePlayer;
+                // at the start of a betting stage, the last raise index is the first active player by default
+                gameState.lastRaiseIndex = nextActivePlayer;
                 return _moveToNextStage();
             } else {
                 // otherwise, the next player should submit their decryption values
-                gameState.currentPlayerIndex = (gameState.currentPlayerIndex + 1) % numPlayers;
+                gameState.currentPlayerIndex = nextRevealPlayer;
             }
         } else {
-            // betting stage or showdown
+            // current in a betting stage or showdown stage
+
             // if there are no more active players, the round ends and the last
             // active player wins the pot
             if (_countActivePlayers() == 1) {
                 _endRound();
+                emit THP_Log("_progressGame() if _countActivePlayers() == 1");
             }
+
             // if the last raise index is the same as the next active player index,
             // the betting stage is complete.
             // Reset the round bet amounts and move to the next stage
-            uint256 nextPlayer = _findNextActivePlayer(gameState.currentPlayerIndex);
+            bool requireActive = true;
+            uint256 nextPlayer = getNextActivePlayer(gameState.currentPlayerIndex, requireActive);
             // Check if betting round is complete
             if (nextPlayer == gameState.lastRaiseIndex) {
+                emit THP_Log("_progressGame() if nextPlayer == gameState.lastRaiseIndex");
                 // Reset betting for a new betting stage
                 // do not reset players' total round bets here
                 if (gameState.stage != GameStage.Showdown) {
@@ -434,7 +537,9 @@ contract TexasHoldemRoom {
                     // if a betting stage ends, the next player should be the dealer
                     // to prepare for the next reveal stage
                     gameState.currentPlayerIndex = gameState.dealerPosition;
-                    gameState.lastRaiseIndex = gameState.currentPlayerIndex;
+                    // For a reveal stage, this isn't used, however, it should be reset at the start
+                    // of the next betting stage
+                    // gameState.lastRaiseIndex = gameState.currentPlayerIndex;
                 } else {
                     // if a showdown stage ends, the next player should be the nextPlayer who
                     // should reveal their cards, followed by the remaining active players
@@ -442,6 +547,7 @@ contract TexasHoldemRoom {
                 }
                 return _moveToNextStage();
             } else {
+                // in the middle of a betting stage with an active player left to act
                 gameState.currentPlayerIndex = nextPlayer;
             }
             // TODO: handle a new round of poker after showdown or only 1 active players
@@ -453,17 +559,8 @@ contract TexasHoldemRoom {
         emit NewStage(gameState.stage);
     }
 
-    function _findNextActivePlayer(uint256 currentIndex) internal view returns (uint256) {
-        uint256 nextIndex = (currentIndex + 1) % numPlayers;
-        while (nextIndex != currentIndex) {
-            if (!players[nextIndex].hasFolded && !players[nextIndex].isAllIn) {
-                return nextIndex;
-            }
-            nextIndex = (nextIndex + 1) % numPlayers;
-        }
-        return currentIndex;
-    }
-
+    // TODO: do we include all-in players in the count?
+    // TODO: don't count players who joined the game after the round started
     function _countActivePlayers() internal view returns (uint256) {
         uint256 count = 0;
         for (uint256 i = 0; i < numPlayers; i++) {
@@ -478,12 +575,41 @@ contract TexasHoldemRoom {
         return gameState.stage;
     }
 
+    function getEncrypedCard(uint256 cardIndex) external view returns (BigNumber memory) {
+        return gameState.encryptedDeck[cardIndex];
+    }
+
+    function getPot() external view returns (uint256) {
+        return gameState.pot;
+    }
+
+    function getCurrentStageBet() external view returns (uint256) {
+        return gameState.currentStageBet;
+    }
+
     function getDealerPosition() external view returns (uint256) {
         return gameState.dealerPosition;
     }
 
     function getCurrentPlayerIndex() external view returns (uint256) {
         return gameState.currentPlayerIndex;
+    }
+
+    function getLastRaiseIndex() external view returns (uint256) {
+        return gameState.lastRaiseIndex;
+    }
+
+    function getPlayersSeatPosition(uint256 playerIndex) external view returns (uint256) {
+        return players[playerIndex].seatPosition;
+    }
+
+    function getPlayersIndexFromAddress(address playerAddress) external view returns (uint256) {
+        for (uint256 i = 0; i < numPlayers; i++) {
+            if (players[i].addr == playerAddress) {
+                return i;
+            }
+        }
+        return 0;
     }
 
     // Hand evaluation functions would go here

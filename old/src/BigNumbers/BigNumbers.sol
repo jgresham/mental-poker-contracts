@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.23;
 
 // Definition here allows both the lib and inheriting contracts to use BigNumber directly.
 struct BigNumber {
@@ -322,7 +322,7 @@ library BigNumbers {
 
     /**
      * @notice BigNumber modular exponentiation with negative base: inv(a)==a_inv && a_inv^e mod n.
-     * /** @dev modexp: takes base, base inverse, exponent, and modulus, asserts inverse(base)==base inverse, 
+     * /** @dev modexp: takes base, base inverse, exponent, and modulus, asserts inverse(base)==base inverse,
      *              internally computes base_inverse^exponent % modulus and creates new BigNumber.
      *              this function is overloaded: it assumes the exponent is negative.
      *              if not, the other method is used, where the inverse of the base is not passed.
@@ -536,7 +536,7 @@ library BigNumbers {
     /**
      * @notice right shift BigNumber value
      * @dev shr: right shift BigNumber a by 'bits' bits.
-     *          copies input value to new memory location before shift and calls _shr function after. 
+     *          copies input value to new memory location before shift and calls _shr function after.
      * @param a BigNumber value to shift
      * @param bits amount of bits to shift by
      * @return result BigNumber
@@ -601,9 +601,9 @@ library BigNumbers {
                 for { let i := length } eq(eq(i, 0), 0) { i := sub(i, 0x20) } {
                     // for(int i=max_length; i!=0; i-=32)
                     switch eq(i, 0x20)
-                        // if i==32:
+                    // if i==32:
                     case 1 { mask := 0 }
-                        //    - handles lsword: no mask needed.
+                    //    - handles lsword: no mask needed.
                     default { mask := mload(sub(lsw_ptr, 0x20)) } //    - else get mask (previous word)
                     lsw := shr(bits, mload(lsw_ptr)) // right shift current by bits
                     mask := shl(mask_shift, mask) // left shift next significant word by mask_shift
@@ -796,7 +796,7 @@ library BigNumbers {
     // ***************** START PRIVATE MANAGEMENT FUNCTIONS ******************
     /**
      * @notice Create a new BigNumber.
-     *     @dev init: overloading allows caller to obtionally pass bitlen where it is known - as it is cheaper to do off-chain and verify on-chain. 
+     *     @dev init: overloading allows caller to obtionally pass bitlen where it is known - as it is cheaper to do off-chain and verify on-chain.
      *            we assert input is in data structure as defined above, and that bitlen, if passed, is correct.
      *            'copy' parameter indicates whether or not to copy the contents of val to a new location in memory (for example where you pass
      *            the contents of another variable's value in)
@@ -814,7 +814,7 @@ library BigNumbers {
             let out
             let freemem := msize()
             switch eq(mod(length, 0x20), 0)
-                // if(val.length % 32 == 0)
+            // if(val.length % 32 == 0)
             case 1 {
                 out := add(freemem, 0x20) // freememory location + length word
                 mstore(freemem, length) // set new length
@@ -832,9 +832,9 @@ library BigNumbers {
             for {} eq(eq(bn_length, 0x20), 0) {} {
                 // for(; length!=32; length-=32)
                 switch eq(mload(add(freemem, 0x20)), 0)
-                    // if(msword==0):
+                // if(msword==0):
                 case 1 { freemem := add(freemem, 0x20) }
-                    //     update length pointer
+                //     update length pointer
                 default { break } // else: loop termination. non-zero word found
                 bn_length := sub(bn_length, 0x20)
             }
@@ -884,15 +884,15 @@ library BigNumbers {
                 // for(int i=max_length; i!=0; i-=32)
                 let max_val := mload(max_ptr) // get next word for 'max'
                 switch gt(i, sub(mload(max), mload(min)))
-                    // if(i>(max_length-min_length)). while
-                    // 'min' words are still available.
+                // if(i>(max_length-min_length)). while
+                // 'min' words are still available.
                 case 1 {
                     let min_val := mload(min_ptr) //      get next word for 'min'
                     mstore(result_ptr, add(add(max_val, min_val), carry)) //      result_word = max_word+min_word+carry
                     switch gt(max_val, sub(uint_max, sub(min_val, carry)))
-                        //      this switch block finds whether or
-                        //      not to set the carry bit for the
-                        //      next iteration.
+                    //      this switch block finds whether or
+                    //      not to set the carry bit for the
+                    //      next iteration.
                     case 1 { carry := 1 }
                     default {
                         switch and(eq(max_val, uint_max), or(gt(carry, 0), gt(min_val, 0)))
@@ -907,9 +907,9 @@ library BigNumbers {
                     mstore(result_ptr, add(max_val, carry)) //       result_word = max_word+carry
 
                     switch and(eq(uint_max, max_val), eq(carry, 1))
-                        //       this switch block finds whether or
-                        //       not to set the carry bit for the
-                        //       next iteration.
+                    //       this switch block finds whether or
+                    //       not to set the carry bit for the
+                    //       next iteration.
                     case 1 { carry := 1 }
                     default { carry := 0 }
                 }
@@ -919,9 +919,9 @@ library BigNumbers {
 
             switch eq(carry, 0)
             case 1 { result_start := add(result_start, 0x20) }
-                // if carry is 0, increment result_start, ie.
-                // length word for result is now one word
-                // position ahead.
+            // if carry is 0, increment result_start, ie.
+            // length word for result is now one word
+            // position ahead.
             default { mstore(result_ptr, 1) } // else if carry is 1, store 1; overflow has
                 // occured, so length word remains in the
                 // same position.
@@ -985,16 +985,16 @@ library BigNumbers {
                 // for(int i=max_length; i!=0; i-=32)
                 let max_val := mload(max_ptr) // get next word for 'max'
                 switch gt(i, len_diff)
-                    // if(i>(max_length-min_length)). while
-                    // 'min' words are still available.
+                // if(i>(max_length-min_length)). while
+                // 'min' words are still available.
                 case 1 {
                     let min_val := mload(min_ptr) //  get next word for 'min'
 
                     mstore(result_ptr, sub(sub(max_val, min_val), carry)) //  result_word = (max_word-min_word)-carry
 
                     switch or(lt(max_val, add(min_val, carry)), and(eq(min_val, uint_max), eq(carry, 1)))
-                        //  this switch block finds whether or
-                        //  not to set the carry bit for the next iteration.
+                    //  this switch block finds whether or
+                    //  not to set the carry bit for the next iteration.
                     case 1 { carry := 1 }
                     default { carry := 0 }
 
@@ -1005,9 +1005,9 @@ library BigNumbers {
                     mstore(result_ptr, sub(max_val, carry)) //      result_word = max_word-carry
 
                     switch and(eq(max_val, 0), eq(carry, 1))
-                        //      this switch block finds whether or
-                        //      not to set the carry bit for the
-                        //      next iteration.
+                    //      this switch block finds whether or
+                    //      not to set the carry bit for the
+                    //      next iteration.
                     case 1 { carry := 1 }
                     default { carry := 0 }
                 }
@@ -1127,9 +1127,9 @@ library BigNumbers {
             for {} eq(eq(length, 0x20), 0) {} {
                 // for(; length!=32; length-=32)
                 switch eq(mload(msword_ptr), 0)
-                    // if(msword==0):
+                // if(msword==0):
                 case 1 { msword_ptr := add(msword_ptr, 0x20) }
-                    //     update length pointer
+                //     update length pointer
                 default { break } // else: loop termination. non-zero word found
                 length := sub(length, 0x20)
             }
@@ -1220,9 +1220,9 @@ library BigNumbers {
             assembly {
                 msw := mload(msw_ptr) // get most significant word
                 switch eq(i, 0x20)
-                    // if i==32:
+                // if i==32:
                 case 1 { mask := 0 }
-                    // handles msword: no mask needed.
+                // handles msword: no mask needed.
                 default { mask := mload(add(msw_ptr, 0x20)) } // else get mask (next word)
                 msw := shl(bits, msw) // left shift current msw by 'bits'
                 mask := shr(mask_shift, mask) // right shift next significant word by mask_shift

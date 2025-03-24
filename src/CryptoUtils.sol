@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.23;
 
 import "./BigNumbers/BigNumbers.sol";
 
@@ -97,5 +97,29 @@ contract CryptoUtils {
         BigNumber memory c2 = BigNumbers.modmul(BigNumbers.modexp(pubKey, rToUse, P_2048), message, P_2048);
 
         return EncryptedCard(c1, c2);
+    }
+
+    function decodeBigintMessage(BigNumber memory message) public pure returns (string memory) {
+        // possibly put this in decryptCard(), but don't want extra gas cost for all intermediate decryptions
+        // Extract the actual value from BigNumber, ignoring leading zeros
+        bytes memory decryptedBytes = message.val;
+        uint256 startIndex = 0;
+
+        // Find the first non-zero byte
+        for (uint256 i = 0; i < decryptedBytes.length; i++) {
+            if (decryptedBytes[i] != 0) {
+                startIndex = i;
+                break;
+            }
+        }
+
+        // Create a new bytes array with only the significant bytes
+        bytes memory trimmedBytes = new bytes(decryptedBytes.length - startIndex);
+        for (uint256 i = 0; i < trimmedBytes.length; i++) {
+            trimmedBytes[i] = decryptedBytes[i + startIndex];
+        }
+
+        string memory decryptedCardString = string(trimmedBytes);
+        return decryptedCardString;
     }
 }
