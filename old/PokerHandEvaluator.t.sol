@@ -17,7 +17,7 @@ contract PokerHandEvaluatorTest is Test {
         pokerHandEvaluator = new PokerHandEvaluator();
     }
 
-    function test_bestHandRoyalFlush() public {
+    function test_bestHandRoyalFlush() public view {
         // Royal Flush: 10, J, Q, K, A of the same suit
         // Hearts: 8 (10H), 9 (JH), 10 (QH), 11 (KH), 12 (AH)
         string[7] memory cards = ["8", "9", "10", "11", "12", "26", "39"];
@@ -28,7 +28,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(hand.score, 1000000000000000);
     }
 
-    function test_bestHandStraightFlush() public {
+    function test_bestHandStraightFlush() public view {
         // Straight Flush: 5 consecutive cards of the same suit
         string[7] memory cards = ["0", "1", "2", "3", "4", "5", "6"];
         PokerHandEvaluator.Hand memory hand = pokerHandEvaluator.findBestHandExternal(cards);
@@ -46,7 +46,7 @@ contract PokerHandEvaluatorTest is Test {
         assertTrue(hand2.score > hand.score);
     }
 
-    function test_bestHandFourOfAKind() public {
+    function test_bestHandFourOfAKind() public view {
         // Four of a Kind: 4 cards of the same rank
         // Four 5s (5H, 5D, 5C, 5S) and a 7H
         string[7] memory cards = ["3", "16", "29", "42", "5", "18", "31"];
@@ -57,7 +57,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(hand.score, 800000000000507);
     }
 
-    function test_bestHandFullHouse() public {
+    function test_bestHandFullHouse() public view {
         // Full House: 3 cards of one rank and 2 of another
         // Three 8s (8H, 8D, 8C) and two Ks (KH, KD)
         string[7] memory cards = ["6", "19", "32", "11", "24", "0", "13"];
@@ -68,7 +68,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(hand.score, 700000000000813);
     }
 
-    function test_bestHandFlush() public {
+    function test_bestHandFlush() public view {
         // Flush: 5 cards of the same suit, not in sequence
         // 2H, 5H, 7H, 10H, AH, 2C, 5C
         string[7] memory cards = ["0", "3", "5", "8", "12", "26", "29"];
@@ -78,7 +78,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluator.HandRank.Flush));
     }
 
-    function test_bestHandStraight() public {
+    function test_bestHandStraight() public view {
         // Straight: 5 consecutive cards of mixed suits
         // 5H, 6D, 7C, 8S, 9H
         string[7] memory cards = ["3", "17", "31", "45", "7", "20", "33"];
@@ -88,7 +88,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluator.HandRank.Straight));
     }
 
-    function test_bestHandThreeOfAKind() public {
+    function test_bestHandThreeOfAKind() public view {
         // Three of a Kind: 3 cards of the same rank
         // Three 7s (7H, 7D, 7C) and 2H, 9S
         string[7] memory cards = ["5", "18", "31", "0", "45", "26", "39"];
@@ -98,7 +98,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluator.HandRank.ThreeOfAKind));
     }
 
-    function test_bestHandTwoPair() public {
+    function test_bestHandTwoPair() public view {
         // Two Pair: 2 cards of one rank, 2 of another
         // Two 4s (4H, 4D) and two Js (JH, JD) and a 2C
         string[7] memory cards = ["2", "15", "9", "22", "28", "41", "0"];
@@ -108,7 +108,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluator.HandRank.TwoPair));
     }
 
-    function test_bestHandPair() public {
+    function test_bestHandPair() public view {
         // Pair: 2 cards of the same rank
         // Two As (AH, AD) and 3H, 5C, 9S
         string[7] memory cards = ["12", "25", "1", "29", "45", "26", "39"];
@@ -118,7 +118,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluator.HandRank.Pair));
     }
 
-    function test_bestHandHighCard() public {
+    function test_bestHandHighCard() public view {
         // High Card: When no other hand is made
         // AH, 10C, 8D, 5S, 2H with different suits
         string[7] memory cards = ["12", "36", "21", "44", "0", "26", "39"];

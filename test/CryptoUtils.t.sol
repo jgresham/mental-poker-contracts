@@ -54,8 +54,8 @@ contract CryptoUtilsTest is Test {
             CryptoUtils.EncryptedCard({c1: BigNumbers.init(c1Bytes, false), c2: BigNumbers.init(c2Bytes, false)});
 
         BigNumber memory decryptedMessage = cryptoUtils.verifyDecryptCard(encryptedCard, privatekey2048, c1Inverse);
-        BigNumber memory testMessage = BigNumbers.init(testMessageBytes, false);
-        assertEq(BigNumbers.eq(decryptedMessage, testMessage), true);
+        BigNumber memory testMessage1 = BigNumbers.init(testMessageBytes, false);
+        assertEq(BigNumbers.eq(decryptedMessage, testMessage1), true);
     }
 
     // (gas: 902,290)
@@ -77,8 +77,8 @@ contract CryptoUtilsTest is Test {
             CryptoUtils.EncryptedCard({c1: BigNumbers.init(c1Bytes, false), c2: BigNumbers.init(c2Bytes, false)});
 
         BigNumber memory decryptedMessage = cryptoUtils.verifyDecryptCard(encryptedCard, privatekey2048, c1Inverse);
-        BigNumber memory testMessage = BigNumbers.init(expectedMessageBytes, false);
-        assertEq(BigNumbers.eq(decryptedMessage, testMessage), true);
+        BigNumber memory testMessage2 = BigNumbers.init(expectedMessageBytes, false);
+        assertEq(BigNumbers.eq(decryptedMessage, testMessage2), true);
 
         // Convert BigNumber to string and trim leading zeros for comparison
         string memory expectedCardString = string(expectedMessageBytes);
@@ -129,8 +129,8 @@ contract CryptoUtilsTest is Test {
             CryptoUtils.EncryptedCard({c1: BigNumbers.init(c1Bytes, false), c2: BigNumbers.init(c2Bytes, false)});
 
         BigNumber memory decryptedMessage = cryptoUtils.verifyDecryptCard(encryptedCard, privatekey2048, c1Inverse);
-        BigNumber memory testMessage = BigNumbers.init(expectedMessageBytes, false);
-        assertEq(BigNumbers.eq(decryptedMessage, testMessage), true);
+        BigNumber memory testMessage3 = BigNumbers.init(expectedMessageBytes, false);
+        assertEq(BigNumbers.eq(decryptedMessage, testMessage3), true);
 
         // Convert BigNumber to string and trim leading zeros for comparison
         string memory expectedCardString = string(expectedMessageBytes);
