@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import "../src/TexasHoldemRoom.sol";
-import "../src/PokerHandEvaluator.sol";
+import "../src/PokerHandEvaluatorv2.sol";
 import "../src/BigNumbers/BigNumbers.sol";
 import "../src/CryptoUtils.sol";
 

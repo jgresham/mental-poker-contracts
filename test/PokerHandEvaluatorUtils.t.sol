@@ -2,7 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {Test, console} from "forge-std/Test.sol";
-import {PokerHandEvaluator} from "../src/PokerHandEvaluator.sol";
+import {PokerHandEvaluatorv2} from "../src/PokerHandEvaluatorv2.sol";
 
 contract StringComparator {
     function compareStrings(string memory _a, string memory _b) public pure returns (bool) {
@@ -10,29 +10,52 @@ contract StringComparator {
     }
 }
 
-contract PokerHandEvaluatorTest is Test {
-    PokerHandEvaluator public pokerHandEvaluator;
+contract PokerHandEvaluatorUtilsTest is Test {
+    PokerHandEvaluatorv2 public pokerHandEvaluator;
 
     function setUp() public {
-        pokerHandEvaluator = new PokerHandEvaluator();
+        pokerHandEvaluator = new PokerHandEvaluatorv2();
     }
 
-    function test_stringToCard() public {
+    function test_stringToCard() public view {
         string memory cardStr = "0";
-        PokerHandEvaluator.Card memory card = pokerHandEvaluator.stringToCard(cardStr);
+        PokerHandEvaluatorv2.Card memory card = pokerHandEvaluator.stringToCard(cardStr);
         assertEq(card.rank, 2);
         assertEq(card.suit, 0);
     }
 
-    function test_stringToHumanReadable() public {
+    function test_stringToHumanReadable() public view {
         string memory cardStr = "0";
         string memory humanReadable = pokerHandEvaluator.stringToHumanReadable(cardStr);
         assertEq(humanReadable, "2H");
     }
 
-    function test_stringToCardEveryCard() public {
+    function test_humanReadableToCard() public view {
+        string memory cardStr = "2H";
+        PokerHandEvaluatorv2.Card memory card = pokerHandEvaluator.humanReadableToCard(cardStr);
+        assertEq(card.rank, 2);
+        assertEq(card.suit, 0);
+        cardStr = "AH";
+        card = pokerHandEvaluator.humanReadableToCard(cardStr);
+        assertEq(card.rank, 14);
+        assertEq(card.suit, 0);
+        cardStr = "10D";
+        card = pokerHandEvaluator.humanReadableToCard(cardStr);
+        assertEq(card.rank, 10);
+        assertEq(card.suit, 1);
+        cardStr = "JC";
+        card = pokerHandEvaluator.humanReadableToCard(cardStr);
+        assertEq(card.rank, 11);
+        assertEq(card.suit, 2);
+        cardStr = "7S";
+        card = pokerHandEvaluator.humanReadableToCard(cardStr);
+        assertEq(card.rank, 7);
+        assertEq(card.suit, 3);
+    }
+
+    function test_stringToCardEveryCard() public view {
         string memory cardStr = "0";
-        PokerHandEvaluator.Card memory card = pokerHandEvaluator.stringToCard(cardStr);
+        PokerHandEvaluatorv2.Card memory card = pokerHandEvaluator.stringToCard(cardStr);
         assertEq(card.rank, 2);
         assertEq(card.suit, 0);
         cardStr = "1";
@@ -241,7 +264,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(card.suit, 3);
     }
 
-    function test_stringToHumanReadableEveryCard() public {
+    function test_stringToHumanReadableEveryCard() public view {
         string memory cardStr = "0";
         string memory humanReadable = pokerHandEvaluator.stringToHumanReadable(cardStr);
         assertEq(humanReadable, "2H");
@@ -406,7 +429,7 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(humanReadable, "AS");
     }
 
-    function test_uintToString() public {
+    function test_uintToString() public view {
         uint8 value = 10;
         string memory str = pokerHandEvaluator.uintToString(value);
         assertEq(str, "10");

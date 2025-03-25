@@ -77,7 +77,7 @@ contract CryptoUtils {
         BigNumber memory rToUse;
         if (r == 0) {
             // Generate random 2048-bit number
-            bytes32 entropy = keccak256(abi.encodePacked(block.timestamp, block.difficulty));
+            bytes32 entropy = keccak256(abi.encodePacked(block.timestamp, block.prevrandao));
             bytes memory randomBytes = new bytes(256); // 2048 bits = 256 bytes
             for (uint256 i = 0; i < 256; i += 32) {
                 bytes32 randomWord = keccak256(abi.encodePacked(entropy, i));

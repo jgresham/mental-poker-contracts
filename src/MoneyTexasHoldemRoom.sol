@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./PokerHandEvaluator.sol";
+import "./PokerHandEvaluatorv2.sol";
 
 contract TexasHoldemRoom {
     enum GameStage {
@@ -52,8 +52,8 @@ contract TexasHoldemRoom {
     mapping(address => uint256) public playerIndexes;
     bool public isPrivate;
 
-    PokerHandEvaluator public handEvaluator;
-    mapping(address => PokerHandEvaluator.Card[2]) public revealedHoleCards;
+    PokerHandEvaluatorv2 public handEvaluator;
+    mapping(address => PokerHandEvaluatorv2.Card[2]) public revealedHoleCards;
     mapping(address => bytes32) public commitments;
     mapping(address => bytes32) public secrets;
 
@@ -67,7 +67,7 @@ contract TexasHoldemRoom {
         gameState.smallBlind = _smallBlind;
         gameState.bigBlind = _smallBlind * 2;
         gameState.stage = GameStage.Idle;
-        handEvaluator = new PokerHandEvaluator();
+        handEvaluator = new PokerHandEvaluatorv2();
         isPrivate = _isPrivate;
     }
 
@@ -167,7 +167,7 @@ contract TexasHoldemRoom {
         commitments[msg.sender] = commitment;
     }
 
-    function revealHoleCards(PokerHandEvaluator.Card[2] memory cards, bytes32 secret) external {
+    function revealHoleCards(PokerHandEvaluatorv2.Card[2] memory cards, bytes32 secret) external {
         require(gameState.stage == GameStage.Showdown, "Not showdown stage");
         require(!players[playerIndexes[msg.sender] - 1].hasFolded, "Player folded");
 
@@ -201,12 +201,12 @@ contract TexasHoldemRoom {
         require(activeCount > 0, "No hands revealed");
 
         // Convert community cards from bytes32 to Card struct
-        PokerHandEvaluator.Card[5] memory communityCards;
+        PokerHandEvaluatorv2.Card[5] memory communityCards;
         for (uint256 i = 0; i < 5; i++) {
             // In a real implementation, you would decode the bytes32 into rank and suit
             // This is a placeholder for the actual decoding logic
             (uint8 rank, uint8 suit) = decodeCard(gameState.communityCards[i]);
-            communityCards[i] = PokerHandEvaluator.Card({rank: rank, suit: suit});
+            communityCards[i] = PokerHandEvaluatorv2.Card({rank: rank, suit: suit});
         }
 
         // Evaluate hands and find winners
@@ -216,7 +216,7 @@ contract TexasHoldemRoom {
 
         for (uint256 i = 0; i < activeCount; i++) {
             address playerAddr = activePlayers[i];
-            PokerHandEvaluator.Hand memory hand =
+            PokerHandEvaluatorv2.Hand memory hand =
                 handEvaluator.evaluateHand(revealedHoleCards[playerAddr], communityCards);
 
             if (hand.score > highestScore) {

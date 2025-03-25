@@ -144,6 +144,14 @@ contract PokerHandEvaluator {
         return findBestHand(allCards);
     }
 
+    function findBestHandExternal(string[7] memory cards) public pure returns (Hand memory) {
+        Card[7] memory cardArray;
+        for (uint256 i = 0; i < 7; i++) {
+            cardArray[i] = stringToCard(cards[i]);
+        }
+        return findBestHand(cardArray);
+    }
+
     function findBestHand(Card[7] memory cards) internal pure returns (Hand memory) {
         // Sort cards by rank
         for (uint256 i = 0; i < cards.length - 1; i++) {
@@ -158,6 +166,8 @@ contract PokerHandEvaluator {
 
         // Check for each hand type from highest to lowest
         Hand memory bestHand;
+        uint256 score = 0;
+        uint8 rank = 0;
 
         // Check Royal Flush
         if (hasRoyalFlush(cards)) {
@@ -183,20 +193,58 @@ contract PokerHandEvaluator {
         }
 
         // Check Full House
-        (bool hasFullHouse, uint8 threeRank, uint8 pairRank) = hasFullHouseWithRanks(cards);
+        (bool hasFullHouse, uint8 threeRank, uint8 fhPairRank) = hasFullHouseWithRanks(cards);
         if (hasFullHouse) {
             bestHand.rank = HandRank.FullHouse;
-            bestHand.score = 7 * 10 ** 14 + threeRank * 10 ** 2 + pairRank;
+            bestHand.score = 7 * 10 ** 14 + threeRank * 10 ** 2 + fhPairRank;
             return bestHand;
         }
 
-        // Continue with other hand rankings...
-        // The actual implementation would include all hand rankings
-        // For brevity, we're showing the pattern for the top hands
+        // Check Flush
+        (bool hasFlush, uint8[5] memory flushCards) = hasFlushWithCards(cards);
+        if (hasFlush) {
+            bestHand.rank = HandRank.Flush;
+            bestHand.score = 6 * 10 ** 14 + flushCards[4] * 10 ** 8 + flushCards[3] * 10 ** 6 + flushCards[2] * 10 ** 4
+                + flushCards[1] * 10 ** 2 + flushCards[0];
+            return bestHand;
+        }
+
+        // Check Straight
+        (bool hasStraight, uint8 straightHighCard) = hasStraightWithHighCard(cards);
+        if (hasStraight) {
+            bestHand.rank = HandRank.Straight;
+            bestHand.score = 5 * 10 ** 14 + straightHighCard;
+            return bestHand;
+        }
+
+        // Check Three of a Kind
+        (bool hasThreeOfKind, uint8 threeOfKindRank, uint8[2] memory threeKickers) = hasThreeOfAKindWithKickers(cards);
+        if (hasThreeOfKind) {
+            bestHand.rank = HandRank.ThreeOfAKind;
+            bestHand.score = 4 * 10 ** 14 + threeOfKindRank * 10 ** 4 + threeKickers[1] * 10 ** 2 + threeKickers[0];
+            return bestHand;
+        }
+
+        // Check Two Pair
+        (bool hasTwoPair, uint8 highPairRank, uint8 lowPairRank, uint8 twoPairKicker) = hasTwoPairWithKicker(cards);
+        if (hasTwoPair) {
+            bestHand.rank = HandRank.TwoPair;
+            bestHand.score = 3 * 10 ** 14 + highPairRank * 10 ** 4 + lowPairRank * 10 ** 2 + twoPairKicker;
+            return bestHand;
+        }
+
+        // Check Pair
+        (bool hasPair, uint8 pairRank, uint8[3] memory pairKickers) = hasPairWithKickers(cards);
+        if (hasPair) {
+            bestHand.rank = HandRank.Pair;
+            bestHand.score =
+                2 * 10 ** 14 + pairRank * 10 ** 6 + pairKickers[2] * 10 ** 4 + pairKickers[1] * 10 ** 2 + pairKickers[0];
+            return bestHand;
+        }
 
         // Default to high card if no other hand is found
         bestHand.rank = HandRank.HighCard;
-        bestHand.score = calculateHighCardScore(cards);
+        bestHand.score = 1 * 10 ** 14 + calculateHighCardScore(cards);
         return bestHand;
     }
 
@@ -330,6 +378,193 @@ contract PokerHandEvaluator {
         }
 
         return (pairRank > 0, threeOfAKindRank, pairRank);
+    }
+
+    function hasFlushWithCards(Card[7] memory cards) internal pure returns (bool, uint8[5] memory) {
+        uint8[5] memory flushCards;
+
+        for (uint8 suit = 0; suit < 4; suit++) {
+            uint8[] memory suitCards = new uint8[](7);
+            uint8 suitCount = 0;
+
+            for (uint256 i = 0; i < 7; i++) {
+                if (cards[i].suit == suit) {
+                    suitCards[suitCount] = cards[i].rank;
+                    suitCount++;
+                }
+            }
+
+            if (suitCount >= 5) {
+                // Sort suit cards in descending order
+                for (uint256 i = 0; i < suitCount - 1; i++) {
+                    for (uint256 j = 0; j < suitCount - i - 1; j++) {
+                        if (suitCards[j] < suitCards[j + 1]) {
+                            uint8 temp = suitCards[j];
+                            suitCards[j] = suitCards[j + 1];
+                            suitCards[j + 1] = temp;
+                        }
+                    }
+                }
+
+                // Take the highest 5 cards
+                for (uint8 i = 0; i < 5; i++) {
+                    flushCards[4 - i] = suitCards[i];
+                }
+
+                return (true, flushCards);
+            }
+        }
+
+        return (false, flushCards);
+    }
+
+    function hasStraightWithHighCard(Card[7] memory cards) internal pure returns (bool, uint8) {
+        // Remove duplicates
+        uint8[] memory uniqueRanks = new uint8[](15); // Max 14 ranks + 1 for Ace as 1
+        uint8 uniqueCount = 0;
+
+        for (uint256 i = 0; i < 7; i++) {
+            bool isDuplicate = false;
+            for (uint256 j = 0; j < uniqueCount; j++) {
+                if (uniqueRanks[j] == cards[i].rank) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+
+            if (!isDuplicate) {
+                uniqueRanks[uniqueCount] = cards[i].rank;
+                uniqueCount++;
+            }
+        }
+
+        // Add Ace as 1 if Ace exists
+        bool hasAce = false;
+        for (uint256 i = 0; i < uniqueCount; i++) {
+            if (uniqueRanks[i] == 14) {
+                hasAce = true;
+                break;
+            }
+        }
+
+        if (hasAce) {
+            uniqueRanks[uniqueCount] = 1;
+            uniqueCount++;
+        }
+
+        // Sort ranks
+        for (uint256 i = 0; i < uniqueCount - 1; i++) {
+            for (uint256 j = 0; j < uniqueCount - i - 1; j++) {
+                if (uniqueRanks[j] > uniqueRanks[j + 1]) {
+                    uint8 temp = uniqueRanks[j];
+                    uniqueRanks[j] = uniqueRanks[j + 1];
+                    uniqueRanks[j + 1] = temp;
+                }
+            }
+        }
+
+        // Check for straight
+        for (uint256 i = 0; i <= uniqueCount - 5; i++) {
+            if (uniqueRanks[i + 4] == uniqueRanks[i] + 4) {
+                return (true, uniqueRanks[i + 4]);
+            }
+        }
+
+        return (false, 0);
+    }
+
+    function hasThreeOfAKindWithKickers(Card[7] memory cards) internal pure returns (bool, uint8, uint8[2] memory) {
+        uint8[2] memory kickers;
+
+        for (uint256 i = 0; i <= 4; i++) {
+            uint8 count = 1;
+            uint8 rank = cards[i].rank;
+
+            for (uint256 j = i + 1; j < 7; j++) {
+                if (cards[j].rank == rank) {
+                    count++;
+                }
+            }
+
+            if (count == 3) {
+                // Find two highest kickers
+                uint8 kickerCount = 0;
+
+                for (int256 j = 6; j >= 0 && kickerCount < 2; j--) {
+                    if (cards[uint256(j)].rank != rank) {
+                        kickers[kickerCount] = cards[uint256(j)].rank;
+                        kickerCount++;
+                    }
+                }
+
+                return (true, rank, kickers);
+            }
+        }
+
+        return (false, 0, kickers);
+    }
+
+    function hasTwoPairWithKicker(Card[7] memory cards) internal pure returns (bool, uint8, uint8, uint8) {
+        uint8 highPairRank = 0;
+        uint8 lowPairRank = 0;
+
+        // Find pairs
+        for (uint256 i = 6; i > 0; i--) {
+            if (cards[i].rank == cards[i - 1].rank) {
+                if (highPairRank == 0) {
+                    highPairRank = cards[i].rank;
+                    i--; // Skip the second card of the pair
+                } else {
+                    lowPairRank = cards[i].rank;
+                    break;
+                }
+            }
+        }
+
+        if (highPairRank > 0 && lowPairRank > 0) {
+            // Find highest kicker
+            uint8 kicker = 0;
+
+            for (int256 i = 6; i >= 0; i--) {
+                if (cards[uint256(i)].rank != highPairRank && cards[uint256(i)].rank != lowPairRank) {
+                    kicker = cards[uint256(i)].rank;
+                    break;
+                }
+            }
+
+            return (true, highPairRank, lowPairRank, kicker);
+        }
+
+        return (false, 0, 0, 0);
+    }
+
+    function hasPairWithKickers(Card[7] memory cards) internal pure returns (bool, uint8, uint8[3] memory) {
+        uint8[3] memory kickers;
+        uint8 pairRank = 0;
+
+        // Find pair
+        for (uint256 i = 6; i > 0; i--) {
+            if (cards[i].rank == cards[i - 1].rank) {
+                pairRank = cards[i].rank;
+                break;
+            }
+        }
+
+        if (pairRank > 0) {
+            // Find three highest kickers
+            uint8 kickerCount = 0;
+
+            for (int256 i = 6; i >= 0 && kickerCount < 3; i--) {
+                if (cards[uint256(i)].rank != pairRank) {
+                    kickers[kickerCount] = cards[uint256(i)].rank;
+                    kickerCount++;
+                }
+            }
+
+            return (true, pairRank, kickers);
+        }
+
+        return (false, 0, kickers);
     }
 
     function calculateHighCardScore(Card[7] memory cards) internal pure returns (uint256) {

@@ -3,7 +3,7 @@ pragma solidity ^0.8.23;
 
 import "forge-std/Test.sol";
 import "../src/TexasHoldemRoom.sol";
-import "../src/PokerHandEvaluator.sol";
+import "../src/PokerHandEvaluatorv2.sol";
 import "../src/BigNumbers/BigNumbers.sol";
 import "../src/CryptoUtils.sol";
 
@@ -11,7 +11,7 @@ contract TexasHoldemRoomTest is Test {
     using BigNumbers for BigNumber;
 
     TexasHoldemRoom public room;
-    PokerHandEvaluator public pokerHandEvaluator;
+    PokerHandEvaluatorv2 public pokerHandEvaluator;
     address public player1;
     address public player2;
     address public player3;
@@ -34,7 +34,7 @@ contract TexasHoldemRoomTest is Test {
 
     function setUp() public {
         cryptoUtils = new CryptoUtils();
-        pokerHandEvaluator = new PokerHandEvaluator();
+        pokerHandEvaluator = new PokerHandEvaluatorv2();
         room = new TexasHoldemRoom(address(cryptoUtils), SMALL_BLIND, false);
         encryptedDeck1bytes = new bytes[](52);
         encryptedDeck2bytes = new bytes[](52);

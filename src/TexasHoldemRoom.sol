@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import "./PokerHandEvaluator.sol";
+import "./PokerHandEvaluatorv2.sol";
 import "./BigNumbers/BigNumbers.sol";
 import "./CryptoUtils.sol";
 
@@ -68,8 +68,8 @@ contract TexasHoldemRoom {
     GameState public gameState;
     bool public isPrivate;
 
-    PokerHandEvaluator public handEvaluator;
-    mapping(address => PokerHandEvaluator.Card[2]) public revealedCards;
+    PokerHandEvaluatorv2 public handEvaluator;
+    mapping(address => PokerHandEvaluatorv2.Card[2]) public revealedCards;
     mapping(address => bytes32) public commitments;
     mapping(address => bytes32) public secrets;
 
@@ -91,7 +91,7 @@ contract TexasHoldemRoom {
         gameState.smallBlind = _smallBlind;
         gameState.bigBlind = _smallBlind * 2;
         gameState.stage = GameStage.Idle;
-        handEvaluator = new PokerHandEvaluator();
+        handEvaluator = new PokerHandEvaluatorv2();
         // Initialize each element of the array individually to avoid copying memory to storage
         for (uint256 i = 0; i < 52; i++) {
             gameState.encryptedDeck.push(BigNumber({val: "0", neg: false, bitlen: 2048}));
@@ -349,7 +349,10 @@ contract TexasHoldemRoom {
         // TODO: set the cards on the encryptedDeck?
         // return true if the encrypted cards match the decrypted cards from the deck?
 
-        if (countOfHandsRevealed() == countActivePlayers()) {}
+        // put in progressGame()?
+        if (countOfHandsRevealed() == countActivePlayers()) {
+            // decide winner
+        }
 
         // // Convert the encrypted cards to bytes32 format for storage
         // bytes32[2] memory cardBytes;
@@ -378,12 +381,12 @@ contract TexasHoldemRoom {
         require(activeCount > 0, "No hands revealed");
 
         // Convert community cards from bytes32 to Card struct
-        PokerHandEvaluator.Card[5] memory communityCards;
+        PokerHandEvaluatorv2.Card[5] memory communityCards;
         for (uint256 i = 0; i < 5; i++) {
             // In a real implementation, you would decode the bytes32 into rank and suit
             // This is a placeholder for the actual decoding logic
             (uint8 rank, uint8 suit) = (0, 0); // todo fix
-            communityCards[i] = PokerHandEvaluator.Card({rank: rank, suit: suit});
+            communityCards[i] = PokerHandEvaluatorv2.Card({rank: rank, suit: suit});
         }
 
         // Evaluate hands and find winners
@@ -393,7 +396,8 @@ contract TexasHoldemRoom {
 
         for (uint256 i = 0; i < activeCount; i++) {
             address playerAddr = activePlayers[i];
-            PokerHandEvaluator.Hand memory hand = handEvaluator.evaluateHand(revealedCards[playerAddr], communityCards);
+            PokerHandEvaluatorv2.Hand memory hand =
+                handEvaluator.evaluateHand(revealedCards[playerAddr], communityCards);
 
             if (hand.score > highestScore) {
                 // New highest hand
