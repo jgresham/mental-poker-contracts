@@ -69,9 +69,6 @@ contract TexasHoldemRoom {
     bool public isPrivate;
 
     PokerHandEvaluatorv2 public handEvaluator;
-    mapping(address => PokerHandEvaluatorv2.Card[2]) public revealedCards;
-    mapping(address => bytes32) public commitments;
-    mapping(address => bytes32) public secrets;
 
     event GameStarted(uint256 dealerPosition);
     event NewStage(GameStage stage);
@@ -363,79 +360,79 @@ contract TexasHoldemRoom {
         return (card1, card2);
     }
 
-    function determineWinners() external {
-        require(gameState.stage == GameStage.Showdown, "Not showdown stage");
+    // function determineWinners() external {
+    //     require(gameState.stage == GameStage.Showdown, "Not showdown stage");
 
-        address[] memory activePlayers = new address[](numPlayers);
-        uint256 activeCount = 0;
+    //     address[] memory activePlayers = new address[](numPlayers);
+    //     uint256 activeCount = 0;
 
-        // Get active players who revealed their hands
-        for (uint256 i = 0; i < numPlayers; i++) {
-            address playerAddr = players[i].addr;
-            if (!players[i].hasFolded && revealedCards[playerAddr][0].rank != 0) {
-                activePlayers[activeCount] = playerAddr;
-                activeCount++;
-            }
-        }
+    //     // Get active players who revealed their hands
+    //     for (uint256 i = 0; i < numPlayers; i++) {
+    //         address playerAddr = players[i].addr;
+    //         if (!players[i].hasFolded && revealedCards[playerAddr][0].rank != 0) {
+    //             activePlayers[activeCount] = playerAddr;
+    //             activeCount++;
+    //         }
+    //     }
 
-        require(activeCount > 0, "No hands revealed");
+    //     require(activeCount > 0, "No hands revealed");
 
-        // Convert community cards from bytes32 to Card struct
-        PokerHandEvaluatorv2.Card[5] memory communityCards;
-        for (uint256 i = 0; i < 5; i++) {
-            // In a real implementation, you would decode the bytes32 into rank and suit
-            // This is a placeholder for the actual decoding logic
-            (uint8 rank, uint8 suit) = (0, 0); // todo fix
-            communityCards[i] = PokerHandEvaluatorv2.Card({rank: rank, suit: suit});
-        }
+    //     // Convert community cards from bytes32 to Card struct
+    //     PokerHandEvaluatorv2.Card[5] memory communityCards;
+    //     for (uint256 i = 0; i < 5; i++) {
+    //         // In a real implementation, you would decode the bytes32 into rank and suit
+    //         // This is a placeholder for the actual decoding logic
+    //         (uint8 rank, uint8 suit) = (0, 0); // todo fix
+    //         communityCards[i] = PokerHandEvaluatorv2.Card({rank: rank, suit: suit});
+    //     }
 
-        // Evaluate hands and find winners
-        uint256 highestScore = 0;
-        address[] memory winners = new address[](activeCount);
-        uint256 winnerCount = 0;
+    //     // Evaluate hands and find winners
+    //     uint256 highestScore = 0;
+    //     address[] memory winners = new address[](activeCount);
+    //     uint256 winnerCount = 0;
 
-        for (uint256 i = 0; i < activeCount; i++) {
-            address playerAddr = activePlayers[i];
-            PokerHandEvaluatorv2.Hand memory hand =
-                handEvaluator.evaluateHand(revealedCards[playerAddr], communityCards);
+    //     for (uint256 i = 0; i < activeCount; i++) {
+    //         address playerAddr = activePlayers[i];
+    //         PokerHandEvaluatorv2.Hand memory hand =
+    //             handEvaluator.evaluateHand(revealedCards[playerAddr], communityCards);
 
-            if (hand.score > highestScore) {
-                // New highest hand
-                highestScore = hand.score;
-                winners[0] = playerAddr;
-                winnerCount = 1;
-            } else if (hand.score == highestScore) {
-                // Tie
-                winners[winnerCount] = playerAddr;
-                winnerCount++;
-            }
-        }
+    //         if (hand.score > highestScore) {
+    //             // New highest hand
+    //             highestScore = hand.score;
+    //             winners[0] = playerAddr;
+    //             winnerCount = 1;
+    //         } else if (hand.score == highestScore) {
+    //             // Tie
+    //             winners[winnerCount] = playerAddr;
+    //             winnerCount++;
+    //         }
+    //     }
 
-        // Distribute pot
-        uint256 winAmount = gameState.pot / winnerCount;
-        for (uint256 i = 0; i < winnerCount; i++) {
-            address winner = winners[i];
-            uint256 winnerIndex = getPlayerIndexFromAddr(winner);
-            if (winnerIndex >= 0) {
-                players[winnerIndex].chips += winAmount;
-            } else {
-                // TODO: Handle case where winner is not in the game?
-            }
-            emit PotWon(winner, winAmount);
-        }
+    //     // Distribute pot
+    //     uint256 winAmount = gameState.pot / winnerCount;
+    //     for (uint256 i = 0; i < winnerCount; i++) {
+    //         address winner = winners[i];
+    //         uint256 winnerIndex = getPlayerIndexFromAddr(winner);
+    //         if (winnerIndex >= 0) {
+    //             players[winnerIndex].chips += winAmount;
+    //         } else {
+    //             // TODO: Handle case where winner is not in the game?
+    //         }
+    //         emit PotWon(winner, winAmount);
+    //     }
 
-        // Reset game state
-        gameState.stage = GameStage.Idle;
-        gameState.pot = 0;
+    //     // Reset game state
+    //     gameState.stage = GameStage.Idle;
+    //     gameState.pot = 0;
 
-        // Clear revealed cards and commitments
-        for (uint256 i = 0; i < numPlayers; i++) {
-            address playerAddr = players[i].addr;
-            delete revealedCards[playerAddr];
-            delete commitments[playerAddr];
-            delete secrets[playerAddr];
-        }
-    }
+    //     // Clear revealed cards and commitments
+    //     for (uint256 i = 0; i < numPlayers; i++) {
+    //         address playerAddr = players[i].addr;
+    //         delete revealedCards[playerAddr];
+    //         delete commitments[playerAddr];
+    //         delete secrets[playerAddr];
+    //     }
+    // }
 
     function _placeBet(uint256 playerIndex, uint256 amount) internal {
         require(players[playerIndex].chips >= amount, "Not enough chips");
