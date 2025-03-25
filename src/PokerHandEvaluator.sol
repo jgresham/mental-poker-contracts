@@ -26,6 +26,113 @@ contract PokerHandEvaluator {
         Card[5] bestHand;
     }
 
+    function uintToString(uint8 value) public pure returns (string memory) {
+        // Special case for 0
+        if (value == 0) {
+            return "0";
+        }
+
+        // Find length of number by counting digits
+        uint8 length = 0;
+        uint8 temp = value;
+        while (temp != 0) {
+            length++;
+            temp /= 10;
+        }
+
+        // Create bytes array of the right length
+        bytes memory buffer = new bytes(length);
+
+        // Fill buffer from right to left
+        uint8 i = length;
+        while (value != 0) {
+            buffer[--i] = bytes1(uint8(48 + value % 10));
+            value /= 10;
+        }
+
+        return string(buffer);
+    }
+
+    /**
+     * @dev Converts a card string representation (0-51) to a Card struct
+     * @param cardStr The string representation of the card (0-51)
+     * @return A Card struct with the appropriate rank and suit
+     *
+     * Card mapping:
+     * - Hearts: 0-12 (2-A)
+     * - Diamonds: 13-25 (2-A)
+     * - Clubs: 26-38 (2-A)
+     * - Spades: 39-51 (2-A)
+     */
+    function stringToCard(string memory cardStr) public pure returns (Card memory) {
+        uint8 cardNum = uint8(parseInt(cardStr));
+        require(cardNum < 52, "Invalid card number");
+
+        uint8 suit = cardNum / 13;
+        uint8 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
+
+        return Card({rank: rank, suit: suit});
+    }
+
+    /**
+     * @dev Converts a card string representation (0-51) to a string
+     * @param cardStr The string representation of the card (0-51)
+     * @return A string with the appropriate rank and suit
+     *
+     * Card mapping:
+     * - Hearts: 0-12 (2-A)
+     * - Diamonds: 13-25 (2-A)
+     * - Clubs: 26-38 (2-A)
+     * - Spades: 39-51 (2-A)
+     */
+    function stringToHumanReadable(string memory cardStr) public pure returns (string memory) {
+        uint8 cardNum = uint8(parseInt(cardStr));
+        require(cardNum < 52, "Invalid card number");
+
+        uint8 suit = cardNum / 13;
+        uint8 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
+        string memory suitStr;
+        if (suit <= 0) {
+            suitStr = "H";
+        } else if (suit <= 1) {
+            suitStr = "D";
+        } else if (suit <= 2) {
+            suitStr = "C";
+        } else {
+            suitStr = "S";
+        }
+        string memory rankStr;
+        if (rank <= 10) {
+            rankStr = uintToString(rank);
+        } else if (rank == 11) {
+            rankStr = "J";
+        } else if (rank == 12) {
+            rankStr = "Q";
+        } else if (rank == 13) {
+            rankStr = "K";
+        } else {
+            rankStr = "A";
+        }
+        return string.concat(rankStr, suitStr);
+    }
+
+    /**
+     * @dev Helper function to parse a string to an integer
+     * @param s The string to parse
+     * @return The parsed integer value
+     */
+    function parseInt(string memory s) public pure returns (uint256) {
+        bytes memory b = bytes(s);
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
+            uint8 c = uint8(b[i]);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
+        }
+        return result;
+    }
+
     function evaluateHand(Card[2] memory holeCards, Card[5] memory communityCards) public pure returns (Hand memory) {
         Card[7] memory allCards;
         allCards[0] = holeCards[0];

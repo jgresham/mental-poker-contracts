@@ -39,7 +39,7 @@ contract TexasHoldemRoom {
         uint256 totalRoundBet;
         bool hasFolded;
         bool isAllIn;
-        bytes32[2] cards;
+        string[2] cards;
         uint8 seatPosition;
     }
 
@@ -52,7 +52,7 @@ contract TexasHoldemRoom {
         uint256 dealerPosition;
         uint256 currentPlayerIndex;
         uint256 lastRaiseIndex;
-        bytes32[5] communityCards;
+        string[5] communityCards;
         uint256 revealedCommunityCards;
         BigNumber[] encryptedDeck;
     }
@@ -81,7 +81,6 @@ contract TexasHoldemRoom {
     event EncryptedShuffleSubmitted(address indexed player, BigNumber[] encryptedShuffle);
     event DecryptionValuesSubmitted(address indexed player, uint8[] cardIndexes, BigNumber[] decryptionValues);
     event PlayerCardsRevealed(address indexed player, string card1, string card2);
-    event PlayerCardsRevealedBigInts(address indexed player, BigNumber card1, BigNumber card2);
     event FlopRevealed(address indexed player, string card1, string card2, string card3);
     event TurnRevealed(address indexed player, string card1);
     event RiverRevealed(address indexed player, string card1);
@@ -174,7 +173,7 @@ contract TexasHoldemRoom {
             totalRoundBet: 0,
             hasFolded: false,
             isAllIn: false,
-            cards: [bytes32(0), bytes32(0)],
+            cards: ["", ""],
             seatPosition: seatPosition
         });
         seatPositionToPlayerIndex[seatPosition] = uint8(numPlayers - 1);
@@ -227,14 +226,19 @@ contract TexasHoldemRoom {
                 string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[5]);
                 string memory card2 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[6]);
                 string memory card3 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[7]);
+                gameState.communityCards[0] = card1;
+                gameState.communityCards[1] = card2;
+                gameState.communityCards[2] = card3;
                 emit FlopRevealed(msg.sender, card1, card2, card3);
             } else if (gameState.stage == GameStage.RevealTurn) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[9]);
+                gameState.communityCards[3] = card1;
                 emit TurnRevealed(msg.sender, card1);
             } else if (gameState.stage == GameStage.RevealRiver) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(gameState.encryptedDeck[11]);
+                gameState.communityCards[4] = card1;
                 emit RiverRevealed(msg.sender, card1);
             }
         }
@@ -261,7 +265,7 @@ contract TexasHoldemRoom {
             players[i].totalRoundBet = 0;
             players[i].hasFolded = false;
             players[i].isAllIn = false;
-            players[i].cards = [bytes32(0), bytes32(0)];
+            players[i].cards = ["", ""];
         }
 
         // Post blinds
@@ -310,27 +314,42 @@ contract TexasHoldemRoom {
         _progressGame();
     }
 
+    /**
+     * @dev Reveals the player's cards.
+     * @dev Many todos: validate the encrypted cards, the card indexes for the player are valid,
+     * @dev and that it is appropriate (showdown/all-in) to reveal cards.
+     * @param encryptedCard1 The player's encrypted card 1
+     * @param encryptedCard2 The player's encrypted card 2
+     * @param privateKey The player's private key
+     * @param c1Inverse The inverse of the player's c1 modulo inverse for decryption
+     */
     function revealMyCards(
         CryptoUtils.EncryptedCard memory encryptedCard1,
         CryptoUtils.EncryptedCard memory encryptedCard2,
         BigNumber memory privateKey,
         BigNumber memory c1Inverse
-    ) external {
+    ) external returns (string memory card1, string memory card2) {
         uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
         require(!players[playerIndex].hasFolded, "Player folded");
+        require(strEq(players[playerIndex].cards[0], ""), "Player already revealed cards (0) in this round");
+        require(strEq(players[playerIndex].cards[1], ""), "Player already revealed cards (1) in this round");
 
         // Create an instance of CryptoUtils to call its functions
         BigNumber memory decryptedCard1 = cryptoUtils.verifyDecryptCard(encryptedCard1, privateKey, c1Inverse);
         BigNumber memory decryptedCard2 = cryptoUtils.verifyDecryptCard(encryptedCard2, privateKey, c1Inverse);
-        // emit PlayerCardsRevealedBigInts(msg.sender, decryptedCard1, decryptedCard2);
 
         // convert the decrypted cards to a string
-        string memory card1 = cryptoUtils.decodeBigintMessage(decryptedCard1);
-        string memory card2 = cryptoUtils.decodeBigintMessage(decryptedCard2);
+        card1 = cryptoUtils.decodeBigintMessage(decryptedCard1);
+        card2 = cryptoUtils.decodeBigintMessage(decryptedCard2);
+        players[playerIndex].cards[0] = card1;
+        players[playerIndex].cards[1] = card2;
 
-        emit PlayerCardsRevealed(msg.sender, card1, card2);
+        emit PlayerCardsRevealed(address(msg.sender), card1, card2);
+
         // TODO: set the cards on the encryptedDeck?
         // return true if the encrypted cards match the decrypted cards from the deck?
+
+        if (countOfHandsRevealed() == countActivePlayers()) {}
 
         // // Convert the encrypted cards to bytes32 format for storage
         // bytes32[2] memory cardBytes;
@@ -338,39 +357,7 @@ contract TexasHoldemRoom {
         // // For example: cardBytes[0] = bytes32(abi.encode(encryptedCard1));
         // // cardBytes[1] = bytes32(abi.encode(encryptedCard2));
         // players[playerIndex].cards = cardBytes;
-    }
-
-    function submitEncryptedCards(bytes32[2] calldata cards) external {
-        require(gameState.stage == GameStage.Preflop, "Wrong stage");
-        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
-        require(players[playerIndex].cards[0] == bytes32(0), "Cards already submitted");
-
-        players[playerIndex].cards = cards;
-    }
-
-    function submitCardsCommitment(bytes32 commitment) external {
-        require(gameState.stage == GameStage.Preflop, "Wrong stage");
-        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
-        require(players[playerIndex].cards[0] == bytes32(0), "Cards already submitted");
-
-        commitments[msg.sender] = commitment;
-    }
-
-    function revealCards(PokerHandEvaluator.Card[2] memory cards, bytes32 secret) external {
-        require(gameState.stage == GameStage.Showdown, "Not showdown stage");
-        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
-        require(!players[playerIndex].hasFolded, "Player folded");
-
-        // Verify commitment
-        bytes32 commitment = keccak256(abi.encode(cards, secret));
-        require(commitment == commitments[msg.sender], "Invalid revelation");
-
-        // Copy cards one by one
-        revealedCards[msg.sender][0] = cards[0];
-        revealedCards[msg.sender][1] = cards[1];
-        secrets[msg.sender] = secret;
-
-        emit HandRevealed(msg.sender, cards[0].rank, cards[1].rank);
+        return (card1, card2);
     }
 
     function determineWinners() external {
@@ -395,7 +382,7 @@ contract TexasHoldemRoom {
         for (uint256 i = 0; i < 5; i++) {
             // In a real implementation, you would decode the bytes32 into rank and suit
             // This is a placeholder for the actual decoding logic
-            (uint8 rank, uint8 suit) = decodeCard(gameState.communityCards[i]);
+            (uint8 rank, uint8 suit) = (0, 0); // todo fix
             communityCards[i] = PokerHandEvaluator.Card({rank: rank, suit: suit});
         }
 
@@ -444,11 +431,6 @@ contract TexasHoldemRoom {
             delete commitments[playerAddr];
             delete secrets[playerAddr];
         }
-    }
-
-    function decodeCard(bytes32 encoded) internal pure returns (uint8 rank, uint8 suit) {
-        rank = uint8(uint256(encoded) >> 248);
-        suit = uint8(uint256(encoded) >> 240);
     }
 
     function _placeBet(uint256 playerIndex, uint256 amount) internal {
@@ -514,7 +496,7 @@ contract TexasHoldemRoom {
 
             // if there are no more active players, the round ends and the last
             // active player wins the pot
-            if (_countActivePlayers() == 1) {
+            if (countActivePlayers() == 1) {
                 _endRound();
                 emit THP_Log("_progressGame() if _countActivePlayers() == 1");
             }
@@ -561,9 +543,9 @@ contract TexasHoldemRoom {
 
     // TODO: do we include all-in players in the count?
     // TODO: don't count players who joined the game after the round started
-    function _countActivePlayers() internal view returns (uint256) {
-        uint256 count = 0;
-        for (uint256 i = 0; i < numPlayers; i++) {
+    function countActivePlayers() public view returns (uint8) {
+        uint8 count = 0;
+        for (uint8 i = 0; i < numPlayers; i++) {
             if (!players[i].hasFolded) {
                 count++;
             }
@@ -612,6 +594,20 @@ contract TexasHoldemRoom {
         return 0;
     }
 
+    /**
+     * @dev Returns the number of hands revealed by the players this round
+     * @return The number of hands revealed
+     */
+    function countOfHandsRevealed() public view returns (uint8) {
+        uint8 count = 0;
+        for (uint8 i = 0; i < numPlayers; i++) {
+            if (strEq(players[i].cards[0], "") && strEq(players[i].cards[1], "")) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     // Hand evaluation functions would go here
     // These would be called during showdown to determine winners
     // Implementation would include standard poker hand rankings
@@ -646,5 +642,10 @@ contract TexasHoldemRoom {
         } else {
             return bytes1(uint8(b) + 0x57); // a-f
         }
+    }
+
+    // string equality check
+    function strEq(string memory a, string memory b) public pure returns (bool) {
+        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 }

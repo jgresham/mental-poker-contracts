@@ -686,9 +686,15 @@ contract TexasHoldemRoomTest is Test {
             CryptoUtils.EncryptedCard({c1: c1p1, c2: room.getEncrypedCard(0)});
         CryptoUtils.EncryptedCard memory encryptedCard2 =
             CryptoUtils.EncryptedCard({c1: c1p1, c2: room.getEncrypedCard(2)});
-
-        room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
+        // string memory card1 = cryptoUtils.decodeBigintMessage(encryptedCard1.c1);
+        // string memory card2 = cryptoUtils.decodeBigintMessage(encryptedCard2.c1);
+        vm.expectEmit(address(room));
+        emit TexasHoldemRoom.PlayerCardsRevealed(address(player1), "0", "2");
+        (string memory card1, string memory card2) =
+            room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
         vm.stopPrank();
+        vm.assertEq(card1, "0");
+        vm.assertEq(card2, "2");
 
         console.log("Player2 is revealing their cards");
         vm.startPrank(player2);
@@ -697,8 +703,18 @@ contract TexasHoldemRoomTest is Test {
         CryptoUtils.EncryptedCard memory encryptedCard4 =
             CryptoUtils.EncryptedCard({c1: c1p2, c2: room.getEncrypedCard(3)});
 
-        room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
+        vm.expectEmit(address(room));
+        emit TexasHoldemRoom.PlayerCardsRevealed(address(player2), "1", "3");
+        // also expect a winner event to be emitted
+        // vm.expectEmit(address(room));
+        // emit TexasHoldemRoom.RoundWinner(address(player2), 1);
+        (string memory card3, string memory card4) =
+            room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
         vm.stopPrank();
+        vm.assertEq(card3, "1");
+        vm.assertEq(card4, "3");
+        // todo: check cards exactly match an unshuffled deck's cards
+
         //         bytes memory expectedMessageBytes = hex"30";
         //        BigNumber memory testMessage = BigNumbers.init(expectedMessageBytes, false);
         // assertEq(BigNumbers.eq(decryptedMessage, testMessage), true);
