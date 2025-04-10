@@ -473,7 +473,10 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             hex"63a98ae06802aef6037fe7cd405f2858fbfc338529081667ce03e7c1db99a906831bc5484b499ae9bfa6aab927a63d301f419c5b5fa0e511277143d24f9e5b034cf96e128e753d6c1e3c775c977d0ab18e9f1ba62debc3953ef82892ce0cd721fc27068aac0fd6dcf4f39ace0c07821e343a92b10856d91807633112793a003fe8bccc0d1bf6f07053496c80e07fd1769812f8a9695816924a4cc31f497c10f32d310b48dc50809e7c83832b156d0f06bc4deae3aeccb71559904deb23efb0b74c1ab61d9064742cb390aea940a8e139e4e90572e349c8533140d5dc3707c4a22d265aa580d0c1baa8d4e3bc2fb57f30325bbc7ea864f581819a919cdb3d3c68",
             false
         );
-        room.submitDecryptionValues(cardIndexes, decryptionValues);
+        bytes[] memory decryptionValuesBytes = new bytes[](2);
+        decryptionValuesBytes[0] = decryptionValues[0].val;
+        decryptionValuesBytes[1] = decryptionValues[1].val;
+        room.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
         vm.stopPrank();
         console.log("Player 1 submitted decryption values");
 
@@ -491,7 +494,9 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             hex"a0e03eb8dbe426da4cc7ebb7ac260a336800b32860a1762ac66e545d76c85d635d5b6220dc0afed7fa2e64940b30424ab381c92f15ac4a374498354288dfa145d4e7bd7a366723a1762c9f87fa925a8c4719e447863118b12becff513632d25d1ee2375032b155a98260ae61d5b1767c5e111b0236ce6eff3647b672d151ce3c5abfc7cc9fec696d85c00496e7226825dfc8052b39cabb83fca581b3611e933a493b08d703248b6909229cc594cb0984f791d09be8bafb7263895a1890bf17ad8370ceb08874fec23172d8ddd658b12da298b60a3a075cf4bae2e4d6e9fb9b95b241b8e013dc8a9b105659e17fec5d0b0bf6bdfaf884e56e82ac5209ec86b728",
             false
         );
-        room.submitDecryptionValues(cardIndexes, decryptionValues);
+        decryptionValuesBytes[0] = decryptionValues[0].val;
+        decryptionValuesBytes[1] = decryptionValues[1].val;
+        room.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
         vm.stopPrank();
         console.log("Player 2 submitted decryption values");
 
@@ -556,7 +561,11 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             hex"b6c5e61524dfc1b3e9939eada99982bfcc222c634d214dd099ebca9c5bce47bfbb2b713894c3936f964700e163a4759d541841bf946e561074f0382142cbc273334a361b19280cf290ff1f81a73435d6dca3e6342b31d77f2e56ba79c69c5f5b923aae57f24da3381d67b693095f72917b04c65480dd0efee6ac5e9f8f1097d31de8ab04f44bb4fbe22387bcb00319dd3e192c9411df738dadcf4226fe75cb3d6e82a4c93be27ab703f5cf548c75dd8b3a3f0e072f2a249ff1f84799c0e56eaf2191b03be9113b4a5db6b5e6720db44590b7db3b15d977ea6c6be663300e353382e1d1d0a2bcc32fd091d39ffc0d4460dd3e598a1fa4ae55366f79e564e7af93",
             false
         );
-        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesFlop);
+        bytes[] memory decryptionValuesBytesFlop = new bytes[](3);
+        decryptionValuesBytesFlop[0] = decryptionValuesFlop[0].val;
+        decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
+        decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
+        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
@@ -569,7 +578,10 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         decryptionValuesFlop[0] = BigNumbers.init(hex"35", false);
         decryptionValuesFlop[1] = BigNumbers.init(hex"36", false);
         decryptionValuesFlop[2] = BigNumbers.init(hex"37", false);
-        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesFlop);
+        decryptionValuesBytesFlop[0] = decryptionValuesFlop[0].val;
+        decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
+        decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
+        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
         vm.stopPrank();
 
         // We should be in the flop phase now
@@ -625,15 +637,18 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             hex"605413af834e4b12f8158ccccd824ed8d1d1f78c9ebfdb1c6b5e950556b4b0e2562d67dd9bf6c22158f227b8ba898f64f6b90797c837ed02839a2d11c332ec0f7e81ff68a7d89392d81d98d8fde08c0609802a0656b8eabea0065511c8e0c78166284c40e827b992da52326cc9e5dad7f9d5acfd46adfc537550b709c94a0419ec117665d24b2d747505758619325660cf6997f777d14b40515f07ffc8afff04bfc0dd05b3602c8c9428dac2229bf8cb007d69948a4ccaa724e4154df844e68d1a7df1b509605bd76535f7b394bc4c838bbc9726f77b26511aeb88ab61e561f010f4e87fbe680e77d987388595bc247127f660e295ee358a90d9ee09a9bce929",
             false
         );
+        bytes[] memory decryptionValuesBytesTurn = new bytes[](1);
+        decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
         vm.startPrank(player1);
-        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesTurn);
+        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
         vm.startPrank(player2);
         cardIndexesTurn[0] = 9;
         decryptionValuesTurn[0] = BigNumbers.init(hex"39", false);
-        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesTurn);
+        decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
+        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Turn));
@@ -666,15 +681,18 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             hex"d578a34f9db9bcb3dd72cdfe4cb581df4a912ad7a105b520c201c40504889782855fed206e43ed45e8b53d61401902a50b22ad0be6d0ab76e0d09cceed53e838b9c5984357145bdaebf62b4298dd1a56a5320e13a272865c5e4d2bd94755c8454ca395b823f844596187de8b7e05c43bf7bb5cc4aa87645d433ce2c1fd1bc3029ffc35999f13b187cdbbf566db26dc9451aa273b1ab8ff75c3d577322040ecb667e610096a384c385de97a5a79344725970867472832caf80e403825e8f73aa92080830b0adb94ad02c8a49a9ab7287bbcc78fd7cc4ddfc3d8229670b3c7b5eadbdf9b791a0c3ea0a4aea78d76fe1157f61d6d8f8c15ea29574d960efe6ad58c",
             false
         );
+        bytes[] memory decryptionValuesBytesRiver = new bytes[](1);
+        decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
         vm.startPrank(player1);
-        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesRiver);
+        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
         vm.startPrank(player2);
         cardIndexesRiver[0] = 11;
         decryptionValuesRiver[0] = BigNumbers.init(hex"3131", false);
-        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesRiver);
+        decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
+        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.River));
