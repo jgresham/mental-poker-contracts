@@ -77,9 +77,9 @@ contract TexasHoldemRoom {
     event PlayerMoved(address indexed player, Action indexed action, uint256 amount);
     event PotWon(address indexed winner, uint256 amount);
     event HandRevealed(address indexed player, uint8 card1Rank, uint8 card2Rank);
-    event EncryptedShuffleSubmitted(address indexed player, BigNumber[] encryptedShuffle);
+    event EncryptedShuffleSubmitted(address indexed player, bytes[] encryptedShuffle);
     event DecryptionValuesSubmitted(
-        address indexed player, uint8[] cardIndexes, BigNumber[] decryptionValues
+        address indexed player, uint8[] cardIndexes, bytes[] decryptionValues
     );
     event PlayerCardsRevealed(address indexed player, string card1, string card2);
     event FlopRevealed(address indexed player, string card1, string card2, string card3);
@@ -200,7 +200,7 @@ contract TexasHoldemRoom {
         );
 
         // Store shuffle as an action?
-        // emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
+        emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
 
         // Copy each element individually since direct array assignment is not supported
         for (uint256 i = 0; i < encryptedShuffle.length; i++) {
@@ -215,7 +215,7 @@ contract TexasHoldemRoom {
     }
 
     // fully new function
-    function submitDecryptionValues(uint8[] memory cardIndexes, BigNumber[] memory decryptionValues)
+    function submitDecryptionValues(uint8[] memory cardIndexes, bytes[] memory decryptionValues)
         external
     {
         require(
@@ -235,7 +235,7 @@ contract TexasHoldemRoom {
         emit DecryptionValuesSubmitted(msg.sender, cardIndexes, decryptionValues);
 
         for (uint256 i = 0; i < cardIndexes.length; i++) {
-            encryptedDeck[cardIndexes[i]] = decryptionValues[i];
+            encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false);
         }
 
         if (currentPlayerIndex == 1) {
