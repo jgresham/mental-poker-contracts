@@ -409,17 +409,25 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         // The Dealer should be player1
         // and player1 should submit their encrypted shuffle first
         vm.startPrank(player1);
-        BigNumber[] memory encryptedShuffle = new BigNumber[](52);
-        // initialize with 2048 bits of random data for each card
+        // BigNumber[] memory encryptedShuffle = new BigNumber[](52);
+        // // initialize with 2048 bits of random data for each card
+        // for (uint256 i = 0; i < 52; i++) {
+        //     // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(i)));
+        //     // // Use the contract's instance to call init
+        //     // encryptedShuffle[i - 1] = BigNumbers.init(cardBytes, false, 2048);
+        //     // convert BigNumber to bytes back into a BigNumber
+        //     // bytes memory cardBytes = encryptedDeck1bytes[i];
+        //     encryptedShuffle[i] = BigNumbers.init(encryptedDeck1bytes[i], false);
+        // }
+        // room.submitEncryptedShuffle(encryptedShuffle);
+
+        bytes[] memory encryptedShuffleBytes = new bytes[](52);
         for (uint256 i = 0; i < 52; i++) {
-            // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(i)));
-            // // Use the contract's instance to call init
-            // encryptedShuffle[i - 1] = BigNumbers.init(cardBytes, false, 2048);
-            // convert BigNumber to bytes back into a BigNumber
-            // bytes memory cardBytes = encryptedDeck1bytes[i];
-            encryptedShuffle[i] = BigNumbers.init(encryptedDeck1bytes[i], false);
+            encryptedShuffleBytes[i] = encryptedDeck1bytes[i];
         }
-        room.submitEncryptedShuffle(encryptedShuffle);
+
+        room.submitEncryptedShuffle(encryptedShuffleBytes);
+
         vm.stopPrank();
 
         assertEq(room.dealerPosition(), 0);
@@ -429,13 +437,20 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         // player2 should submit their encrypted shuffle next
         vm.startPrank(player2);
         // initialize with 2048 bits of random data for each card
+        // for (uint256 i = 0; i < 52; i++) {
+        //     // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(1000 + i)));
+        //     // // Use the contract's instance to call init
+        //     // encryptedShuffle[i] = BigNumbers.init(cardBytes, false, 2048);
+        //     encryptedShuffle[i] = BigNumbers.init(encryptedDeck2bytes[i], false);
+        // }
+        // room.submitEncryptedShuffle(encryptedShuffle);
+
         for (uint256 i = 0; i < 52; i++) {
-            // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(1000 + i)));
-            // // Use the contract's instance to call init
-            // encryptedShuffle[i] = BigNumbers.init(cardBytes, false, 2048);
-            encryptedShuffle[i] = BigNumbers.init(encryptedDeck2bytes[i], false);
+            encryptedShuffleBytes[i] = encryptedDeck2bytes[i];
         }
-        room.submitEncryptedShuffle(encryptedShuffle);
+
+        room.submitEncryptedShuffle(encryptedShuffleBytes);
+
         vm.stopPrank();
 
         // Verify that the game state is now in the deal phase
