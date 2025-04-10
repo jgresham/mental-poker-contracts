@@ -15,12 +15,12 @@ library Crypto {
      * @param _m is the modulus
      * @return 0 if success, >0 otherwise
      */
-    function pkcs1Sha256Verify(bytes32 _sha256, BigNumber memory _s, BigNumber memory _e, BigNumber memory _m)
-        internal
-        view
-        verifyParams(_s, _e, _m)
-        returns (uint256)
-    {
+    function pkcs1Sha256Verify(
+        bytes32 _sha256,
+        BigNumber memory _s,
+        BigNumber memory _e,
+        BigNumber memory _m
+    ) internal view verifyParams(_s, _e, _m) returns (uint256) {
         return _pkcs1Sha256Verify(_sha256, _s, _e, _m);
     }
 
@@ -33,12 +33,12 @@ library Crypto {
      * @param _m is the modulus
      * @return 0 if success, >0 otherwise
      */
-    function pkcs1Sha256VerifyRaw(bytes memory _data, BigNumber memory _s, BigNumber memory _e, BigNumber memory _m)
-        internal
-        view
-        verifyParams(_s, _e, _m)
-        returns (uint256)
-    {
+    function pkcs1Sha256VerifyRaw(
+        bytes memory _data,
+        BigNumber memory _s,
+        BigNumber memory _e,
+        BigNumber memory _m
+    ) internal view verifyParams(_s, _e, _m) returns (uint256) {
         return _pkcs1Sha256Verify(sha256(_data), _s, _e, _m);
     }
 
@@ -53,7 +53,11 @@ library Crypto {
      * @param randomness BigNumber array of randomness
      * @return bool indicating primality.
      */
-    function isPrime(BigNumber memory a, BigNumber[3] memory randomness) internal view returns (bool) {
+    function isPrime(BigNumber memory a, BigNumber[3] memory randomness)
+        internal
+        view
+        returns (bool)
+    {
         BigNumber memory one = BigNumbers.one();
         BigNumber memory two = BigNumbers.two();
 
@@ -102,11 +106,12 @@ library Crypto {
      * @param _m is the modulus
      * @return 0 if success, >0 otherwise
      */
-    function _pkcs1Sha256Verify(bytes32 _sha256, BigNumber memory _s, BigNumber memory _e, BigNumber memory _m)
-        private
-        view
-        returns (uint256)
-    {
+    function _pkcs1Sha256Verify(
+        bytes32 _sha256,
+        BigNumber memory _s,
+        BigNumber memory _e,
+        BigNumber memory _m
+    ) private view returns (uint256) {
         uint8[19] memory sha256Prefix = [
             0x30,
             0x31,
@@ -221,11 +226,13 @@ library Crypto {
                                                     : 27;
     }
 
-    function witness(BigNumber memory w, BigNumber memory a, BigNumber memory a1, BigNumber memory a1_odd, uint256 k)
-        private
-        view
-        returns (int256)
-    {
+    function witness(
+        BigNumber memory w,
+        BigNumber memory a,
+        BigNumber memory a1,
+        BigNumber memory a1_odd,
+        uint256 k
+    ) private view returns (int256) {
         BigNumber memory one = BigNumbers.one();
         BigNumber memory two = BigNumbers.two();
         // returns -  0: likely prime, 1: composite number (definite non-prime).

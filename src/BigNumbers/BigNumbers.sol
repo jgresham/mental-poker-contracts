@@ -49,7 +49,11 @@ library BigNumbers {
      *  @param bitlen bit length of output.
      *  @return BigNumber instance
      */
-    function init(bytes memory val, bool neg, uint256 bitlen) public view returns (BigNumber memory) {
+    function init(bytes memory val, bool neg, uint256 bitlen)
+        public
+        view
+        returns (BigNumber memory)
+    {
         return _init(val, neg, bitlen);
     }
 
@@ -106,10 +110,10 @@ library BigNumbers {
                 r.neg = true;
             } else {
                 if (compare == 1) {
-                    (val, bitlen) = _sub(a.val, b.val);
+                    (val, bitlen) = privSub(a.val, b.val);
                     r.neg = a.neg;
                 } else if (compare == -1) {
-                    (val, bitlen) = _sub(b.val, a.val);
+                    (val, bitlen) = privSub(b.val, a.val);
                     r.neg = !a.neg;
                 } else {
                     return zero();
@@ -149,10 +153,10 @@ library BigNumbers {
         if (a.neg || b.neg) {
             if (a.neg && b.neg) {
                 if (compare == 1) {
-                    (val, bitlen) = _sub(a.val, b.val);
+                    (val, bitlen) = privSub(a.val, b.val);
                     r.neg = true;
                 } else if (compare == -1) {
-                    (val, bitlen) = _sub(b.val, a.val);
+                    (val, bitlen) = privSub(b.val, a.val);
                     r.neg = false;
                 } else {
                     return zero();
@@ -165,10 +169,10 @@ library BigNumbers {
             }
         } else {
             if (compare == 1) {
-                (val, bitlen) = _sub(a.val, b.val);
+                (val, bitlen) = privSub(a.val, b.val);
                 r.neg = false;
             } else if (compare == -1) {
-                (val, bitlen) = _sub(b.val, a.val);
+                (val, bitlen) = privSub(b.val, a.val);
                 r.neg = true;
             } else {
                 return zero();
@@ -275,7 +279,11 @@ library BigNumbers {
      * @param n modulus BigNumber
      * @return r result BigNumber - the modular inverse
      */
-    function modInverse(BigNumber memory a, BigNumber memory n) public view returns (BigNumber memory) {
+    function modInverse(BigNumber memory a, BigNumber memory n)
+        public
+        view
+        returns (BigNumber memory)
+    {
         // Check inputs
         require(!n.neg && !isZero(n.val), "Modulus must be positive");
         require(!a.neg, "Base must be positive");
@@ -345,7 +353,11 @@ library BigNumbers {
      * @param r result BigNumber
      * @return bool whether or not the operation was verified
      */
-    function divVerify(BigNumber memory a, BigNumber memory b, BigNumber memory r) public view returns (bool) {
+    function divVerify(BigNumber memory a, BigNumber memory b, BigNumber memory r)
+        public
+        view
+        returns (bool)
+    {
         // first do zero check.
         // if a<b (always zero) and r==zero (input check), return true.
         if (cmp(a, b, false) == -1) {
@@ -513,7 +525,11 @@ library BigNumbers {
      * @param r result BigNumber
      * @return boolean result
      */
-    function modinvVerify(BigNumber memory a, BigNumber memory n, BigNumber memory r) public view returns (bool) {
+    function modinvVerify(BigNumber memory a, BigNumber memory n, BigNumber memory r)
+        public
+        view
+        returns (bool)
+    {
         require(!a.neg && !n.neg); //assert positivity of inputs.
         /*
          * the following proves:
@@ -556,7 +572,11 @@ library BigNumbers {
      * @param signed whether to consider sign of inputs
      * @return int result
      */
-    function cmp(BigNumber memory a, BigNumber memory b, bool signed) public pure returns (int256) {
+    function cmp(BigNumber memory a, BigNumber memory b, bool signed)
+        public
+        pure
+        returns (int256)
+    {
         int256 trigger = 1;
         if (signed) {
             if (a.neg && b.neg) trigger = -1;
@@ -665,7 +685,7 @@ library BigNumbers {
      * @param bits amount of bits to shift by
      * @return result BigNumber
      */
-    function shr(BigNumber memory a, uint256 bits) public view returns (BigNumber memory) {
+    function pubShr(BigNumber memory a, uint256 bits) public view returns (BigNumber memory) {
         require(!a.neg);
         return _shr(a, bits);
     }
@@ -744,7 +764,7 @@ library BigNumbers {
                 mstore(msw_ptr, sub(mload(bn_val_ptr), 0x20)) // store new length in new position
                 mstore(bn, msw_ptr) // update pointer from bn
             }
-            default {}
+            default { }
         }
 
         return bn;
@@ -870,19 +890,40 @@ library BigNumbers {
                 a := add(a, 1)
                 let m := mload(0x40)
                 mstore(m, 0xf8f9cbfae6cc78fbefe7cdc3a1793dfcf4f0e8bbd8cec470b6a28a7a5a3e1efd)
-                mstore(add(m, 0x20), 0xf5ecf1b3e9debc68e1d9cfabc5997135bfb7a7a3938b7b606b5b4b3f2f1f0ffe)
-                mstore(add(m, 0x40), 0xf6e4ed9ff2d6b458eadcdf97bd91692de2d4da8fd2d0ac50c6ae9a8272523616)
-                mstore(add(m, 0x60), 0xc8c0b887b0a8a4489c948c7f847c6125746c645c544c444038302820181008ff)
-                mstore(add(m, 0x80), 0xf7cae577eec2a03cf3bad76fb589591debb2dd67e0aa9834bea6925f6a4a2e0e)
-                mstore(add(m, 0xa0), 0xe39ed557db96902cd38ed14fad815115c786af479b7e83247363534337271707)
-                mstore(add(m, 0xc0), 0xc976c13bb96e881cb166a933a55e490d9d56952b8d4e801485467d2362422606)
-                mstore(add(m, 0xe0), 0x753a6d1b65325d0c552a4d1345224105391a310b29122104190a110309020100)
+                mstore(
+                    add(m, 0x20), 0xf5ecf1b3e9debc68e1d9cfabc5997135bfb7a7a3938b7b606b5b4b3f2f1f0ffe
+                )
+                mstore(
+                    add(m, 0x40), 0xf6e4ed9ff2d6b458eadcdf97bd91692de2d4da8fd2d0ac50c6ae9a8272523616
+                )
+                mstore(
+                    add(m, 0x60), 0xc8c0b887b0a8a4489c948c7f847c6125746c645c544c444038302820181008ff
+                )
+                mstore(
+                    add(m, 0x80), 0xf7cae577eec2a03cf3bad76fb589591debb2dd67e0aa9834bea6925f6a4a2e0e
+                )
+                mstore(
+                    add(m, 0xa0), 0xe39ed557db96902cd38ed14fad815115c786af479b7e83247363534337271707
+                )
+                mstore(
+                    add(m, 0xc0), 0xc976c13bb96e881cb166a933a55e490d9d56952b8d4e801485467d2362422606
+                )
+                mstore(
+                    add(m, 0xe0), 0x753a6d1b65325d0c552a4d1345224105391a310b29122104190a110309020100
+                )
                 mstore(0x40, add(m, 0x100))
                 let magic := 0x818283848586878898a8b8c8d8e8f929395969799a9b9d9e9faaeb6bedeeff
                 let shift := 0x100000000000000000000000000000000000000000000000000000000000000
                 let _a := div(mul(a, magic), shift)
                 r := div(mload(add(m, sub(255, _a))), shift)
-                r := add(r, mul(256, gt(arg, 0x8000000000000000000000000000000000000000000000000000000000000000)))
+                r :=
+                    add(
+                        r,
+                        mul(
+                            256,
+                            gt(arg, 0x8000000000000000000000000000000000000000000000000000000000000000)
+                        )
+                    )
                 // where a is a power of two, result needs to be incremented. we use the power of two trick here: if(arg & arg-1 == 0) ++r;
                 if eq(and(arg, sub(arg, 1)), 0) { r := add(r, 1) }
             }
@@ -929,7 +970,11 @@ library BigNumbers {
      * @param bitlen uint - bit length of value
      * @return r BigNumber initialized value.
      */
-    function _init(bytes memory val, bool neg, uint256 bitlen) private view returns (BigNumber memory r) {
+    function _init(bytes memory val, bool neg, uint256 bitlen)
+        private
+        view
+        returns (BigNumber memory r)
+    {
         // use identity at location 0x4 for cheap memcpy.
         // grab contents of val, load starting from memory end, update memory end pointer.
         assembly {
@@ -953,7 +998,7 @@ library BigNumbers {
 
             // handle leading zero words. assume freemem is pointer to bytes value
             let bn_length := mload(freemem)
-            for {} eq(eq(bn_length, 0x20), 0) {} {
+            for { } eq(eq(bn_length, 0x20), 0) { } {
                 // for(; length!=32; length-=32)
                 switch eq(mload(add(freemem, 0x20)), 0)
                 // if(msword==0):
@@ -1063,7 +1108,9 @@ library BigNumbers {
             // be a's bit length or (a's bit length)+1, depending on carry bit.this is cheaper than calling bitLength.
             let msword := mload(add(result, 0x20)) // get most significant word of result
             // if(carry==1 || msword>>(max_bitlen % 256)==1):
-            if or(eq(carry, 1), eq(shr(mod(max_bitlen, 256), msword), 1)) { max_bitlen := add(max_bitlen, 1) } // if msword's bit length is 1 greater
+            if or(eq(carry, 1), eq(shr(mod(max_bitlen, 256), msword), 1)) {
+                max_bitlen := add(max_bitlen, 1)
+            } // if msword's bit length is 1 greater
                 // than max_bitlen, OR overflow occured,
                 // new bitlen is max_bitlen+1.
         }
@@ -1073,7 +1120,7 @@ library BigNumbers {
 
     /**
      * @notice takes two BigNumber memory values and subtracts them.
-     * @dev _sub: This function is private and only callable from add: therefore the values may be of different sizes,
+     * @dev privSub: This function is private and only callable from add: therefore the values may be of different sizes,
      *            in any order of size, and of different signs (handled in add).
      *            As values may be of different sizes, inputs are considered starting from the least significant words,
      *            working back.
@@ -1085,7 +1132,11 @@ library BigNumbers {
      * @return bytes result - max + min.
      * @return uint - bit length of result.
      */
-    function _sub(bytes memory max, bytes memory min) public pure returns (bytes memory, uint256) {
+    function privSub(bytes memory max, bytes memory min)
+        public
+        pure
+        returns (bytes memory, uint256)
+    {
         bytes memory result;
         uint256 carry = 0;
         uint256 uint_max = type(uint256).max;
@@ -1116,7 +1167,9 @@ library BigNumbers {
 
                     mstore(result_ptr, sub(sub(max_val, min_val), carry)) //  result_word = (max_word-min_word)-carry
 
-                    switch or(lt(max_val, add(min_val, carry)), and(eq(min_val, uint_max), eq(carry, 1)))
+                    switch or(
+                        lt(max_val, add(min_val, carry)), and(eq(min_val, uint_max), eq(carry, 1))
+                    )
                     //  this switch block finds whether or
                     //  not to set the carry bit for the next iteration.
                     case 1 { carry := 1 }
@@ -1143,7 +1196,7 @@ library BigNumbers {
             result_ptr := add(result_ptr, 0x20)
 
             // for(result_ptr+=32;; result==0; result_ptr+=32)
-            for {} eq(mload(result_ptr), 0) { result_ptr := add(result_ptr, 0x20) } {
+            for { } eq(mload(result_ptr), 0) { result_ptr := add(result_ptr, 0x20) } {
                 result_start := add(result_start, 0x20) // push up the start pointer for the result
                 max_len := sub(max_len, 0x20) // subtract a word (32 bytes) from the
                     // result length.
@@ -1207,7 +1260,11 @@ library BigNumbers {
      * @param _m bytes exponent
      * @param r bytes result.
      */
-    function _modexp(bytes memory _b, bytes memory _e, bytes memory _m) private view returns (bytes memory r) {
+    function _modexp(bytes memory _b, bytes memory _e, bytes memory _m)
+        private
+        view
+        returns (bytes memory r)
+    {
         assembly {
             let bl := mload(_b)
             let el := mload(_e)
@@ -1248,7 +1305,7 @@ library BigNumbers {
             let msword_ptr := add(freemem, 0x60)
 
             ///the following code removes any leading words containing all zeroes in the result.
-            for {} eq(eq(length, 0x20), 0) {} {
+            for { } eq(eq(length, 0x20), 0) { } {
                 // for(; length!=32; length-=32)
                 switch eq(mload(msword_ptr), 0)
                 // if(msword==0):

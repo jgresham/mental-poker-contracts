@@ -7,7 +7,7 @@ import "../src/PokerHandEvaluatorv2.sol";
 import "../src/BigNumbers/BigNumbers.sol";
 import "../src/CryptoUtils.sol";
 
-contract TexasHoldemRoomTest is Test {
+contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
     using BigNumbers for BigNumber;
 
     TexasHoldemRoom public room;
@@ -17,6 +17,7 @@ contract TexasHoldemRoomTest is Test {
     uint256 constant SMALL_BLIND = 10;
     uint256 constant INITIAL_BALANCE = 1000;
     CryptoUtils public cryptoUtils;
+    PokerHandEvaluatorv2 public handEvaluator;
     BigNumber publicKey1;
     BigNumber privateKey1;
     BigNumber c1p1;
@@ -33,7 +34,8 @@ contract TexasHoldemRoomTest is Test {
 
     function setUp() public {
         cryptoUtils = new CryptoUtils();
-        room = new TexasHoldemRoom(address(cryptoUtils), SMALL_BLIND, false);
+        handEvaluator = new PokerHandEvaluatorv2();
+        room = new TexasHoldemRoom(address(cryptoUtils), address(handEvaluator), SMALL_BLIND, false);
         encryptedDeck1bytes = new bytes[](52);
         encryptedDeck2bytes = new bytes[](52);
         encryptedDeck1bytes[0] =
@@ -303,7 +305,7 @@ contract TexasHoldemRoomTest is Test {
 
     // function test_JoinGameWith2PlayersStartsGame() public {
     //     // Verify that the game state is idle phase
-    //     (TexasHoldemRoom.GameStage stage0,,,,,,,,) = room.gameState();
+    //     (TexasHoldemRoom.GameStage stage0,,,,,,,) = room.gameState();
     //     assertEq(uint256(stage0), uint256(TexasHoldemRoom.GameStage.Idle));
 
     //     // Test joining with player1
@@ -331,7 +333,7 @@ contract TexasHoldemRoomTest is Test {
     //     assertEq(room.numPlayers(), 1);
 
     //     // Verify that the game state is still idle phase
-    //     (TexasHoldemRoom.GameStage stage1,,,,,,,,) = room.gameState();
+    //     (TexasHoldemRoom.GameStage stage1,,,,,,,) = room.gameState();
     //     assertEq(uint256(stage1), uint256(TexasHoldemRoom.GameStage.Idle));
 
     //     // Test joining with player2
@@ -351,7 +353,7 @@ contract TexasHoldemRoomTest is Test {
     //     assertEq(room.numPlayers(), 2);
 
     //     // Verify that the game state is now in the shuffle phase
-    //     (TexasHoldemRoom.GameStage stage2,,,,,,,,) = room.gameState();
+    //     (TexasHoldemRoom.GameStage stage2,,,,,,,) = room.gameState();
     //     assertEq(uint256(stage2), uint256(TexasHoldemRoom.GameStage.Shuffle));
     // }
 
@@ -436,7 +438,7 @@ contract TexasHoldemRoomTest is Test {
         vm.stopPrank();
 
         // Verify that the game state is now in the deal phase
-        (TexasHoldemRoom.GameStage stage3,,,,,,,,) = room.gameState();
+        (TexasHoldemRoom.GameStage stage3,,,,,,,) = room.gameState();
         assertEq(uint256(stage3), uint256(TexasHoldemRoom.GameStage.RevealDeal));
         assertEq(room.getDealerPosition(), 0);
         assertEq(room.getCurrentPlayerIndex(), 0);
@@ -481,8 +483,10 @@ contract TexasHoldemRoomTest is Test {
         console.log("Player 2 submitted decryption values");
 
         // Verify that the game state is now in the preflop phase, stage 3
-        (TexasHoldemRoom.GameStage stage4,,,,,,,,) = room.gameState();
-        assertEq(uint256(stage4), uint256(TexasHoldemRoom.GameStage.Preflop), "Preflop stage not reached");
+        (TexasHoldemRoom.GameStage stage4,,,,,,,) = room.gameState();
+        assertEq(
+            uint256(stage4), uint256(TexasHoldemRoom.GameStage.Preflop), "Preflop stage not reached"
+        );
         console.log("Preflop stage reached");
         // the first active player LEFT of the dealer starts all betting stages
         assertEq(room.getCurrentPlayerIndex(), 1, "Starting PreFlop: Current player index is not 1");
@@ -683,9 +687,9 @@ contract TexasHoldemRoomTest is Test {
         console.log("Player1 is revealing their cards");
         vm.startPrank(player1);
         CryptoUtils.EncryptedCard memory encryptedCard1 =
-            CryptoUtils.EncryptedCard({c1: c1p1, c2: room.getEncrypedCard(0)});
+            CryptoUtils.EncryptedCard({ c1: c1p1, c2: room.getEncrypedCard(0) });
         CryptoUtils.EncryptedCard memory encryptedCard2 =
-            CryptoUtils.EncryptedCard({c1: c1p1, c2: room.getEncrypedCard(2)});
+            CryptoUtils.EncryptedCard({ c1: c1p1, c2: room.getEncrypedCard(2) });
         // string memory card1 = cryptoUtils.decodeBigintMessage(encryptedCard1.c1);
         // string memory card2 = cryptoUtils.decodeBigintMessage(encryptedCard2.c1);
         vm.expectEmit(address(room));
@@ -699,9 +703,9 @@ contract TexasHoldemRoomTest is Test {
         console.log("Player2 is revealing their cards");
         vm.startPrank(player2);
         CryptoUtils.EncryptedCard memory encryptedCard3 =
-            CryptoUtils.EncryptedCard({c1: c1p2, c2: room.getEncrypedCard(1)});
+            CryptoUtils.EncryptedCard({ c1: c1p2, c2: room.getEncrypedCard(1) });
         CryptoUtils.EncryptedCard memory encryptedCard4 =
-            CryptoUtils.EncryptedCard({c1: c1p2, c2: room.getEncrypedCard(3)});
+            CryptoUtils.EncryptedCard({ c1: c1p2, c2: room.getEncrypedCard(3) });
 
         vm.expectEmit(address(room));
         emit TexasHoldemRoom.PlayerCardsRevealed(address(player2), "1", "3");

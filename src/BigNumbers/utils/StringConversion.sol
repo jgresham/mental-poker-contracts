@@ -87,7 +87,7 @@ library StringConversion {
 
             // Update for next iteration by subtracting remainder and dividing by 10
             bnCopy = BigNumbers.sub(bnCopy, remainder);
-            bnCopy = BigNumbers.shr(bnCopy, 1);
+            bnCopy = BigNumbers.pubShr(bnCopy, 1);
         }
 
         // Construct final string
