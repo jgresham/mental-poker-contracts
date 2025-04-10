@@ -97,8 +97,8 @@ contract TexasHoldemRoom {
         handEvaluator = PokerHandEvaluatorv2(_handEvaluator);
         smallBlind = _smallBlind;
         bigBlind = _smallBlind * 2;
-        // stage = GameStage.Idle;
-        stage = GameStage.Shuffle; // for testing
+        stage = GameStage.Idle;
+        // stage = GameStage.Shuffle; // for testing
         // Initialize each element of the array individually to avoid copying memory to storage
         for (uint256 i = 0; i < 52; i++) {
             encryptedDeck.push(BigNumber({ val: "0", neg: false, bitlen: 2048 }));
@@ -191,18 +191,20 @@ contract TexasHoldemRoom {
     }
 
     // fully new function
-    function submitEncryptedShuffle(BigNumber[] memory encryptedShuffle) external {
+    // function submitEncryptedShuffle(BigNumber[] memory encryptedShuffle) external {
+    function submitEncryptedShuffle(bytes[] memory encryptedShuffle) external {
+        require(encryptedShuffle.length == 52, "Must provide exactly 52 cards");
         require(stage == GameStage.Shuffle, "Wrong stage");
         require(
             currentPlayerIndex == getPlayerIndexFromAddr(msg.sender), "Not your turn to shuffle"
         );
 
         // Store shuffle as an action?
-        emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
+        // emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
 
         // Copy each element individually since direct array assignment is not supported
         for (uint256 i = 0; i < encryptedShuffle.length; i++) {
-            encryptedDeck[i] = encryptedShuffle[i];
+            encryptedDeck[i] = BigNumbers.init(encryptedShuffle[i], false);
         }
 
         currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
@@ -581,9 +583,13 @@ contract TexasHoldemRoom {
         return count;
     }
 
-    // function getEncryptedDeck() external view returns (BigNumber[] memory) {
-    //     return encryptedDeck;
-    // }
+    function getEncryptedDeck() external view returns (bytes[] memory) {
+        bytes[] memory deckBytes = new bytes[](encryptedDeck.length);
+        for (uint256 i = 0; i < encryptedDeck.length; i++) {
+            deckBytes[i] = encryptedDeck[i].val;
+        }
+        return deckBytes;
+    }
 
     function getEncrypedCard(uint256 cardIndex) external view returns (BigNumber memory) {
         return encryptedDeck[cardIndex];
