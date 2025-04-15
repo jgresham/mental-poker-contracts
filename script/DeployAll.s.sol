@@ -5,6 +5,7 @@ import { TexasHoldemRoom } from "../src/TexasHoldemRoom.sol";
 import { Script, console } from "forge-std/Script.sol";
 import { CryptoUtils } from "../src/CryptoUtils.sol";
 import { PokerHandEvaluatorv2 } from "../src/PokerHandEvaluatorv2.sol";
+import { DeckHandler } from "../src/DeckHandler.sol";
 
 contract DeployAll is Script {
     address player1 = address(0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f);
@@ -19,6 +20,8 @@ contract DeployAll is Script {
         PokerHandEvaluatorv2 handEvaluator = new PokerHandEvaluatorv2();
         TexasHoldemRoom room =
             new TexasHoldemRoom(address(cryptoUtils), address(handEvaluator), uint256(40), false);
+        DeckHandler deckHandler = new DeckHandler(address(room), address(cryptoUtils));
+        room.setDeckHandler(address(deckHandler));
         vm.stopBroadcast();
         vm.startBroadcast(0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97);
         room.joinGame();

@@ -12,6 +12,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
 
     TexasHoldemRoom public room;
     PokerHandEvaluatorv2 public pokerHandEvaluator;
+    DeckHandler public deckHandler;
     address public player1;
     address public player2;
     address public player3;
@@ -38,6 +39,8 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         room = new TexasHoldemRoom(
             address(cryptoUtils), address(pokerHandEvaluator), SMALL_BLIND, false
         );
+        deckHandler = new DeckHandler(address(room), address(cryptoUtils));
+        room.setDeckHandler(address(deckHandler));
         encryptedDeck1bytes = new bytes[](52);
         encryptedDeck2bytes = new bytes[](52);
         encryptedDeck1bytes[0] =
@@ -426,7 +429,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             encryptedShuffleBytes[i] = encryptedDeck1bytes[i];
         }
 
-        room.submitEncryptedShuffle(encryptedShuffleBytes);
+        deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
 
         vm.stopPrank();
 
@@ -449,7 +452,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             encryptedShuffleBytes[i] = encryptedDeck2bytes[i];
         }
 
-        room.submitEncryptedShuffle(encryptedShuffleBytes);
+        deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
 
         vm.stopPrank();
 
@@ -479,7 +482,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         bytes[] memory decryptionValuesBytes = new bytes[](2);
         decryptionValuesBytes[0] = decryptionValues[0].val;
         decryptionValuesBytes[1] = decryptionValues[1].val;
-        room.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
+        deckHandler.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
         vm.stopPrank();
         console.log("Player 1 submitted decryption values");
 
@@ -500,7 +503,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         bytes[] memory decryptionValuesBytes2 = new bytes[](2);
         decryptionValuesBytes2[0] = decryptionValues[0].val;
         decryptionValuesBytes2[1] = decryptionValues[1].val;
-        room.submitDecryptionValues(cardIndexes, decryptionValuesBytes2);
+        deckHandler.submitDecryptionValues(cardIndexes, decryptionValuesBytes2);
         vm.stopPrank();
         console.log("Player 2 submitted decryption values");
 
@@ -569,7 +572,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         decryptionValuesBytesFlop[0] = decryptionValuesFlop[0].val;
         decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
         decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
-        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
+        deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
@@ -585,7 +588,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         decryptionValuesBytesFlop[0] = decryptionValuesFlop[0].val;
         decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
         decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
-        room.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
+        deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
         vm.stopPrank();
 
         // We should be in the flop phase now
@@ -644,7 +647,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         bytes[] memory decryptionValuesBytesTurn = new bytes[](1);
         decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
         vm.startPrank(player1);
-        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
+        deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
@@ -652,7 +655,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         cardIndexesTurn[0] = 9;
         decryptionValuesTurn[0] = BigNumbers.init(hex"3439", false);
         decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
-        room.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
+        deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Turn));
@@ -688,7 +691,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         bytes[] memory decryptionValuesBytesRiver = new bytes[](1);
         decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
         vm.startPrank(player1);
-        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
+        deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 
         assertEq(room.currentPlayerIndex(), 1);
@@ -696,7 +699,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         cardIndexesRiver[0] = 11;
         decryptionValuesRiver[0] = BigNumbers.init(hex"3334", false);
         decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
-        room.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
+        deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.River));
@@ -722,9 +725,9 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         console.log("Player1 is revealing their cards");
         vm.startPrank(player1);
         CryptoUtils.EncryptedCard memory encryptedCard1 =
-            CryptoUtils.EncryptedCard({ c1: c1p1, c2: room.getEncrypedCard(0) });
+            CryptoUtils.EncryptedCard({ c1: c1p1, c2: deckHandler.getEncrypedCard(0) });
         CryptoUtils.EncryptedCard memory encryptedCard2 =
-            CryptoUtils.EncryptedCard({ c1: c1p1, c2: room.getEncrypedCard(2) });
+            CryptoUtils.EncryptedCard({ c1: c1p1, c2: deckHandler.getEncrypedCard(2) });
 
         // don't check equality of cards as we don't know them yet
         vm.expectEmit(address(room));
@@ -741,9 +744,9 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         console.log("Player2 is revealing their cards");
         vm.startPrank(player2);
         CryptoUtils.EncryptedCard memory encryptedCard3 =
-            CryptoUtils.EncryptedCard({ c1: c1p2, c2: room.getEncrypedCard(1) });
+            CryptoUtils.EncryptedCard({ c1: c1p2, c2: deckHandler.getEncrypedCard(1) });
         CryptoUtils.EncryptedCard memory encryptedCard4 =
-            CryptoUtils.EncryptedCard({ c1: c1p2, c2: room.getEncrypedCard(3) });
+            CryptoUtils.EncryptedCard({ c1: c1p2, c2: deckHandler.getEncrypedCard(3) });
 
         // don't check equality of cards as we don't know them yet
         vm.expectEmit(address(room));
