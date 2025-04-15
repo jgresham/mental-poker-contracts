@@ -4,6 +4,7 @@ pragma solidity ^0.8.29;
 import "./PokerHandEvaluatorv2.sol";
 import "./BigNumbers/BigNumbers.sol";
 import "./CryptoUtils.sol";
+import "./DeckHandler.sol";
 
 contract TexasHoldemRoom {
     using BigNumbers for BigNumber;
@@ -55,7 +56,6 @@ contract TexasHoldemRoom {
     uint256 public currentPlayerIndex;
     uint256 public lastRaiseIndex;
     string[5] public communityCards;
-    BigNumber[] public encryptedDeck;
 
     uint256 public constant MAX_PLAYERS = 10;
     uint256 public constant MIN_PLAYERS = 2;
@@ -64,6 +64,7 @@ contract TexasHoldemRoom {
 
     CryptoUtils public cryptoUtils;
     PokerHandEvaluatorv2 public handEvaluator;
+    DeckHandler public deckHandler;
 
     Player[MAX_PLAYERS] public players;
     uint8[MAX_PLAYERS] public seatPositionToPlayerIndex;
@@ -74,41 +75,37 @@ contract TexasHoldemRoom {
     event NewStage(GameStage stage);
     event PlayerMoved(address indexed player, Action indexed action, uint256 amount);
     event PotWon(address indexed winner, uint256 amount);
-    event HandRevealed(address indexed player, uint8 card1Rank, uint8 card2Rank);
-    event EncryptedShuffleSubmitted(address indexed player, bytes[] encryptedShuffle);
-    event DecryptionValuesSubmitted(
-        address indexed player, uint8[] cardIndexes, bytes[] decryptionValues
-    );
     event PlayerCardsRevealed(address indexed player, string card1, string card2);
-    event FlopRevealed(address indexed player, string card1, string card2, string card3);
-    event TurnRevealed(address indexed player, string card1);
-    event RiverRevealed(address indexed player, string card1);
     // event THP_Log(string message);
 
     constructor(
         address _cryptoUtils,
         address _handEvaluator,
+        // address _deckHandler,
         uint256 _smallBlind,
         bool _isPrivate
     ) {
         cryptoUtils = CryptoUtils(_cryptoUtils);
         handEvaluator = PokerHandEvaluatorv2(_handEvaluator);
+        // deckHandler = DeckHandler(_deckHandler, address(this), _cryptoUtils);
         smallBlind = _smallBlind;
         bigBlind = _smallBlind * 2;
         stage = GameStage.Idle;
         roundNumber = 0;
-        // stage = GameStage.Shuffle; // for testing
-        // Initialize each element of the array individually to avoid copying memory to storage
-        for (uint256 i = 0; i < 52; i++) {
-            encryptedDeck.push(BigNumber({ val: "0", neg: false, bitlen: 2048 }));
-        }
         isPrivate = _isPrivate;
-        // set dealer position to 0
         dealerPosition = 0;
         currentPlayerIndex = 0;
         for (uint256 i = 0; i < MAX_PLAYERS; i++) {
             seatPositionToPlayerIndex[i] = EMPTY_SEAT;
         }
+    }
+
+    /**
+     * @dev Should only be set by the deployer contract. Can only be called once.
+     */
+    function setDeckHandler(address _deckHandler) external {
+        require(address(deckHandler) == address(0), "DeckHandler already set");
+        deckHandler = DeckHandler(_deckHandler);
     }
 
     // fully new function
@@ -118,9 +115,7 @@ contract TexasHoldemRoom {
                 return i;
             }
         }
-        // put addr in error message
-        string memory errorMessage = string(abi.encodePacked("Player not found for given address"));
-        revert(errorMessage);
+        revert("Player not found for given address");
     }
 
     /**
@@ -187,78 +182,6 @@ contract TexasHoldemRoom {
         if (numPlayers >= MIN_PLAYERS && !isPrivate) {
             _progressGame();
         }
-    }
-
-    // fully new function
-    // function submitEncryptedShuffle(BigNumber[] memory encryptedShuffle) external {
-    function submitEncryptedShuffle(bytes[] memory encryptedShuffle) external {
-        require(encryptedShuffle.length == 52, "Must provide exactly 52 cards");
-        require(stage == GameStage.Shuffle, "Wrong stage");
-        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
-        require(currentPlayerIndex == playerIndex, "Not your turn to shuffle");
-
-        // Store shuffle as an action?
-        emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
-
-        // Copy each element individually since direct array assignment is not supported
-        for (uint256 i = 0; i < encryptedShuffle.length; i++) {
-            encryptedDeck[i] = BigNumbers.init(encryptedShuffle[i], false);
-        }
-
-        currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
-        // if we are back at the dealer, move to the next stage
-        if (currentPlayerIndex == dealerPosition) {
-            stage = GameStage.RevealDeal;
-        }
-    }
-
-    // fully new function
-    function submitDecryptionValues(uint8[] memory cardIndexes, bytes[] memory decryptionValues)
-        external
-    {
-        require(
-            stage == GameStage.RevealDeal || stage == GameStage.RevealFlop
-                || stage == GameStage.RevealTurn || stage == GameStage.RevealRiver,
-            "Game is not in a reveal stage"
-        );
-        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
-        require(currentPlayerIndex == playerIndex, "Not your turn to decrypt");
-        require(
-            cardIndexes.length == decryptionValues.length,
-            "Mismatch in cardIndexes and decryptionValues lengths"
-        );
-        // TODO: verify decryption values?
-        // TODO: verify decryption indexes
-        emit DecryptionValuesSubmitted(msg.sender, cardIndexes, decryptionValues);
-
-        for (uint256 i = 0; i < cardIndexes.length; i++) {
-            encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false);
-        }
-
-        if (currentPlayerIndex == 1) {
-            if (stage == GameStage.RevealFlop) {
-                // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[5]);
-                string memory card2 = cryptoUtils.decodeBigintMessage(encryptedDeck[6]);
-                string memory card3 = cryptoUtils.decodeBigintMessage(encryptedDeck[7]);
-                communityCards[0] = card1;
-                communityCards[1] = card2;
-                communityCards[2] = card3;
-                emit FlopRevealed(msg.sender, card1, card2, card3);
-            } else if (stage == GameStage.RevealTurn) {
-                // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[9]);
-                communityCards[3] = card1;
-                emit TurnRevealed(msg.sender, card1);
-            } else if (stage == GameStage.RevealRiver) {
-                // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[11]);
-                communityCards[4] = card1;
-                emit RiverRevealed(msg.sender, card1);
-            }
-        }
-
-        _progressGame();
     }
 
     function startNewHand() external {
@@ -347,11 +270,11 @@ contract TexasHoldemRoom {
         uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
         require(!players[playerIndex].hasFolded, "Player folded");
         require(
-            strEq(players[playerIndex].cards[0], ""),
+            cryptoUtils.strEq(players[playerIndex].cards[0], ""),
             "Player already revealed cards (0) in this round"
         );
         require(
-            strEq(players[playerIndex].cards[1], ""),
+            cryptoUtils.strEq(players[playerIndex].cards[1], ""),
             "Player already revealed cards (1) in this round"
         );
 
@@ -481,6 +404,11 @@ contract TexasHoldemRoom {
         // move dealer position to the left (and blinds later on)
     }
 
+    function progressGame() external {
+        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+        _progressGame();
+    }
+
     /**
      * @dev Increments the current player index and moves to the next stage
      * @dev If in a reveal stage, all players need to submit their decryption values
@@ -581,16 +509,29 @@ contract TexasHoldemRoom {
         return count;
     }
 
-    function getEncryptedDeck() external view returns (bytes[] memory) {
-        bytes[] memory deckBytes = new bytes[](encryptedDeck.length);
-        for (uint256 i = 0; i < encryptedDeck.length; i++) {
-            deckBytes[i] = encryptedDeck[i].val;
-        }
-        return deckBytes;
+    function setCurrentPlayerIndex(uint256 _currentPlayerIndex) external {
+        // only deckHandler contract can call this
+        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+        currentPlayerIndex = _currentPlayerIndex;
     }
 
-    function getEncrypedCard(uint256 cardIndex) external view returns (BigNumber memory) {
-        return encryptedDeck[cardIndex];
+    function setStage(GameStage _stage) external {
+        // only deckHandler contract can call this
+        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+        stage = _stage;
+    }
+
+    function setDealerPosition(uint256 _dealerPosition) external {
+        // only deckHandler contract can call this
+        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+        dealerPosition = _dealerPosition;
+    }
+
+    function setCommunityCards(uint8 index, string memory card) external {
+        // only deckHandler contract can call this
+        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+        require(index < 5, "Invalid community card index");
+        communityCards[index] = card;
     }
 
     function getPlayers() external view returns (Player[] memory) {
@@ -600,52 +541,6 @@ contract TexasHoldemRoom {
         }
         return playersArray;
     }
-
-    // /**
-    //  * @dev Returns all simple public variables of the contract
-    //  * @return stage The current game stage
-    //  * @return smallBlind The small blind amount
-    //  * @return bigBlind The big blind amount
-    //  * @return dealerPosition The position of the dealer
-    //  * @return currentPlayerIndex The index of the current player
-    //  * @return lastRaiseIndex The index of the last player who raised
-    //  * @return pot The total pot amount
-    //  * @return currentStageBet The current bet amount for this stage
-    //  * @return numPlayers The number of players in the game
-    //  * @return isPrivate Whether the game is private
-    //  * @return communityCards The community cards revealed so far
-    //  */
-    // function getPublicVariables()
-    //     external
-    //     view
-    //     returns (
-    //         GameStage,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         uint256,
-    //         bool,
-    //         string[5] memory
-    //     )
-    // {
-    //     return (
-    //         stage,
-    //         smallBlind,
-    //         bigBlind,
-    //         dealerPosition,
-    //         currentPlayerIndex,
-    //         lastRaiseIndex,
-    //         pot,
-    //         currentStageBet,
-    //         numPlayers,
-    //         isPrivate,
-    //         communityCards
-    //     );
-    // }
 
     /**
      * @dev Returns the number of hands revealed by the players this round
@@ -665,9 +560,4 @@ contract TexasHoldemRoom {
     // These would be called during showdown to determine winners
     // Implementation would include standard poker hand rankings
     // and logic for splitting pots in case of ties
-
-    // string equality check
-    function strEq(string memory a, string memory b) public pure returns (bool) {
-        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
-    }
 }
