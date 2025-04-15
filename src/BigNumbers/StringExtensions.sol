@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import "./BigNumbers.sol";
 
@@ -117,7 +117,10 @@ library StringExtensions {
 
         uint256 startIndex = 0;
         // Check for "0x" prefix
-        if (strBytes.length >= 2 && strBytes[0] == 0x30 && (strBytes[1] == 0x78 || strBytes[1] == 0x58)) {
+        if (
+            strBytes.length >= 2 && strBytes[0] == 0x30
+                && (strBytes[1] == 0x78 || strBytes[1] == 0x58)
+        ) {
             startIndex = 2;
         }
 
