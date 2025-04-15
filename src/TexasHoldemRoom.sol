@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import "./PokerHandEvaluatorv2.sol";
 import "./BigNumbers/BigNumbers.sol";
@@ -45,7 +45,7 @@ contract TexasHoldemRoom {
         uint8 seatPosition;
     }
 
-    // struct GameState {
+    uint256 public roundNumber;
     GameStage public stage;
     uint256 public pot;
     uint256 public currentStageBet; // per player (to stay in the round)
@@ -56,7 +56,6 @@ contract TexasHoldemRoom {
     uint256 public lastRaiseIndex;
     string[5] public communityCards;
     BigNumber[] public encryptedDeck;
-    // }
 
     uint256 public constant MAX_PLAYERS = 10;
     uint256 public constant MIN_PLAYERS = 2;
@@ -69,7 +68,6 @@ contract TexasHoldemRoom {
     Player[MAX_PLAYERS] public players;
     uint8[MAX_PLAYERS] public seatPositionToPlayerIndex;
     uint256 public numPlayers;
-    // GameState public gameState;
     bool public isPrivate;
 
     event GameStarted(uint256 dealerPosition);
@@ -98,6 +96,7 @@ contract TexasHoldemRoom {
         smallBlind = _smallBlind;
         bigBlind = _smallBlind * 2;
         stage = GameStage.Idle;
+        roundNumber = 0;
         // stage = GameStage.Shuffle; // for testing
         // Initialize each element of the array individually to avoid copying memory to storage
         for (uint256 i = 0; i < 52; i++) {
@@ -113,7 +112,7 @@ contract TexasHoldemRoom {
     }
 
     // fully new function
-    function getPlayerIndexFromAddr(address addr) internal view returns (uint256) {
+    function getPlayerIndexFromAddr(address addr) external view returns (uint256) {
         for (uint256 i = 0; i < numPlayers; i++) {
             if (players[i].addr == addr) {
                 return i;
@@ -195,9 +194,8 @@ contract TexasHoldemRoom {
     function submitEncryptedShuffle(bytes[] memory encryptedShuffle) external {
         require(encryptedShuffle.length == 52, "Must provide exactly 52 cards");
         require(stage == GameStage.Shuffle, "Wrong stage");
-        require(
-            currentPlayerIndex == getPlayerIndexFromAddr(msg.sender), "Not your turn to shuffle"
-        );
+        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
+        require(currentPlayerIndex == playerIndex, "Not your turn to shuffle");
 
         // Store shuffle as an action?
         emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
@@ -223,9 +221,8 @@ contract TexasHoldemRoom {
                 || stage == GameStage.RevealTurn || stage == GameStage.RevealRiver,
             "Game is not in a reveal stage"
         );
-        require(
-            currentPlayerIndex == getPlayerIndexFromAddr(msg.sender), "Not your turn to decrypt"
-        );
+        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
+        require(currentPlayerIndex == playerIndex, "Not your turn to decrypt");
         require(
             cardIndexes.length == decryptionValues.length,
             "Mismatch in cardIndexes and decryptionValues lengths"
@@ -269,7 +266,8 @@ contract TexasHoldemRoom {
         require(stage == GameStage.Idle, "Game in progress");
 
         // Reset game state
-        stage = GameStage.Preflop;
+        roundNumber++;
+        stage = GameStage.Shuffle;
         pot = 0;
         currentStageBet = bigBlind;
         dealerPosition = (dealerPosition + 1) % numPlayers;
@@ -303,7 +301,7 @@ contract TexasHoldemRoom {
                 || stage == GameStage.River,
             "Game not in a betting stage"
         );
-        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
+        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
         require(playerIndex == currentPlayerIndex, "Not your turn");
         require(!players[playerIndex].hasFolded, "Player has folded");
         require(!players[playerIndex].isAllIn, "Player is all-in");
@@ -346,7 +344,7 @@ contract TexasHoldemRoom {
         BigNumber memory privateKey,
         BigNumber memory c1Inverse
     ) external returns (string memory card1, string memory card2) {
-        uint256 playerIndex = getPlayerIndexFromAddr(msg.sender);
+        uint256 playerIndex = this.getPlayerIndexFromAddr(msg.sender);
         require(!players[playerIndex].hasFolded, "Player folded");
         require(
             strEq(players[playerIndex].cards[0], ""),
@@ -603,35 +601,51 @@ contract TexasHoldemRoom {
         return playersArray;
     }
 
-    function getAllSimpleProperties()
-        external
-        view
-        returns (
-            GameStage,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            bool
-        )
-    {
-        return (
-            stage,
-            smallBlind,
-            bigBlind,
-            dealerPosition,
-            currentPlayerIndex,
-            lastRaiseIndex,
-            pot,
-            currentStageBet,
-            numPlayers,
-            isPrivate
-        );
-    }
+    // /**
+    //  * @dev Returns all simple public variables of the contract
+    //  * @return stage The current game stage
+    //  * @return smallBlind The small blind amount
+    //  * @return bigBlind The big blind amount
+    //  * @return dealerPosition The position of the dealer
+    //  * @return currentPlayerIndex The index of the current player
+    //  * @return lastRaiseIndex The index of the last player who raised
+    //  * @return pot The total pot amount
+    //  * @return currentStageBet The current bet amount for this stage
+    //  * @return numPlayers The number of players in the game
+    //  * @return isPrivate Whether the game is private
+    //  * @return communityCards The community cards revealed so far
+    //  */
+    // function getPublicVariables()
+    //     external
+    //     view
+    //     returns (
+    //         GameStage,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         uint256,
+    //         bool,
+    //         string[5] memory
+    //     )
+    // {
+    //     return (
+    //         stage,
+    //         smallBlind,
+    //         bigBlind,
+    //         dealerPosition,
+    //         currentPlayerIndex,
+    //         lastRaiseIndex,
+    //         pot,
+    //         currentStageBet,
+    //         numPlayers,
+    //         isPrivate,
+    //         communityCards
+    //     );
+    // }
 
     /**
      * @dev Returns the number of hands revealed by the players this round

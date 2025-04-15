@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 contract PokerHandEvaluatorv2 {
     event PHE_Log(string message);
@@ -67,14 +67,16 @@ contract PokerHandEvaluatorv2 {
      * - Spades: 39-51 (2-A)
      */
     function stringToCard(string memory cardStr) public pure returns (Card memory) {
-        require(bytes(cardStr).length == 1 || bytes(cardStr).length == 2, "Invalid card string length");
+        require(
+            bytes(cardStr).length == 1 || bytes(cardStr).length == 2, "Invalid card string length"
+        );
         uint8 cardNum = uint8(parseInt(cardStr));
         require(cardNum < 52, "Invalid card number");
 
         uint8 suit = cardNum / 13;
         uint8 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
 
-        return Card({rank: rank, suit: suit});
+        return Card({ rank: rank, suit: suit });
     }
 
     /**
@@ -164,7 +166,7 @@ contract PokerHandEvaluatorv2 {
         } else if (strEq(suitStr, "S")) {
             suit = 3;
         }
-        return Card({rank: rank, suit: suit});
+        return Card({ rank: rank, suit: suit });
     }
 
     /**
@@ -184,7 +186,11 @@ contract PokerHandEvaluatorv2 {
         return result;
     }
 
-    function evaluateHand(Card[2] memory holeCards, Card[5] memory communityCards) public pure returns (Hand memory) {
+    function evaluateHand(Card[2] memory holeCards, Card[5] memory communityCards)
+        public
+        pure
+        returns (Hand memory)
+    {
         Card[7] memory allCards;
         allCards[0] = holeCards[0];
         allCards[1] = holeCards[1];
@@ -602,7 +608,8 @@ contract PokerHandEvaluatorv2 {
             uint8 kicker = 0;
 
             for (int256 i = 6; i >= 0; i--) {
-                if (cards[uint256(i)].rank != highPairRank && cards[uint256(i)].rank != lowPairRank) {
+                if (cards[uint256(i)].rank != highPairRank && cards[uint256(i)].rank != lowPairRank)
+                {
                     kicker = cards[uint256(i)].rank;
                     break;
                 }

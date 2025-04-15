@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import "./BigNumbers/BigNumbers.sol";
 
@@ -94,7 +94,8 @@ contract CryptoUtils {
         BigNumber memory c1 = BigNumbers.modexp(g, rToUse, P_2048);
 
         BigNumber memory pubKey = BigNumbers.init(publicKey, false);
-        BigNumber memory c2 = BigNumbers.modmul(BigNumbers.modexp(pubKey, rToUse, P_2048), message, P_2048);
+        BigNumber memory c2 =
+            BigNumbers.modmul(BigNumbers.modexp(pubKey, rToUse, P_2048), message, P_2048);
 
         return EncryptedCard(c1, c2);
     }
