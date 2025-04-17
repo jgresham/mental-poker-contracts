@@ -42,6 +42,7 @@ contract TexasHoldemRoom {
         uint256 totalRoundBet;
         bool hasFolded;
         bool isAllIn;
+        bool hasChecked;
         string[2] cards;
         uint8 seatPosition;
     }
@@ -53,9 +54,12 @@ contract TexasHoldemRoom {
     uint256 public smallBlind;
     uint256 public bigBlind;
     uint256 public dealerPosition;
+    /**
+     * @dev The current player that should take an action (background or bet action)
+     * This is the index of the player in the players array. Not the seat position.
+     */
     uint256 public currentPlayerIndex;
     uint256 public lastRaiseIndex;
-    string[5] public communityCards;
 
     uint256 public constant MAX_PLAYERS = 10;
     uint256 public constant MIN_PLAYERS = 2;
@@ -119,7 +123,7 @@ contract TexasHoldemRoom {
     }
 
     /**
-     * @dev Finds the next active player index to the left of the current player using seat position
+     * @dev Finds the next active player index clockwise of the current player using seat position
      * @dev Skips players that have folded or are all-in
      * @dev Returns the current player index if no active players are found
      */
@@ -173,6 +177,7 @@ contract TexasHoldemRoom {
             currentStageBet: 0,
             totalRoundBet: 0,
             hasFolded: false,
+            hasChecked: false,
             isAllIn: false,
             cards: ["", ""],
             seatPosition: seatPosition
@@ -202,6 +207,7 @@ contract TexasHoldemRoom {
             players[i].currentStageBet = 0;
             players[i].totalRoundBet = 0;
             players[i].hasFolded = false;
+            players[i].hasChecked = false;
             players[i].isAllIn = false;
             players[i].cards = ["", ""];
         }
@@ -244,6 +250,7 @@ contract TexasHoldemRoom {
             lastRaiseIndex = playerIndex;
         } else if (action == Action.Check) {
             require(players[playerIndex].currentStageBet == currentStageBet, "Must call or raise");
+            players[playerIndex].hasChecked = true;
         }
 
         emit PlayerMoved(msg.sender, action, raiseAmount);
@@ -471,6 +478,7 @@ contract TexasHoldemRoom {
                     currentStageBet = 0;
                     for (uint256 i = 0; i < numPlayers; i++) {
                         players[i].currentStageBet = 0;
+                        players[i].hasChecked = false;
                     }
                     // if a betting stage ends, the next player should be the dealer
                     // to prepare for the next reveal stage
@@ -521,18 +529,12 @@ contract TexasHoldemRoom {
         stage = _stage;
     }
 
-    function setDealerPosition(uint256 _dealerPosition) external {
-        // only deckHandler contract can call this
-        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
-        dealerPosition = _dealerPosition;
-    }
-
-    function setCommunityCards(uint8 index, string memory card) external {
-        // only deckHandler contract can call this
-        require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
-        require(index < 5, "Invalid community card index");
-        communityCards[index] = card;
-    }
+    // function setCommunityCards(uint8 index, string memory card) external {
+    //     // only deckHandler contract can call this
+    //     require(msg.sender == address(deckHandler), "Only DeckHandler can call this");
+    //     require(index < 5, "Invalid community card index");
+    //     communityCards[index] = card;
+    // }
 
     function getPlayers() external view returns (Player[] memory) {
         Player[] memory playersArray = new Player[](numPlayers);
