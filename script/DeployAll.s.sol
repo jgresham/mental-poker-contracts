@@ -41,6 +41,8 @@ contract DeployAll is Script {
             console.log("  Chips: %d", players[i].chips);
         }
 
+        console.log("Contract TexasHoldemRoom deployed at: %s", address(room));
+        console.log("Contract DeckHandler deployed at: %s", address(deckHandler));
         vm.stopBroadcast();
     }
 }

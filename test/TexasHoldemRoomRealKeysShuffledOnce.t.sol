@@ -514,13 +514,21 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         );
         console.log("Preflop stage reached");
         // the first active player LEFT of the dealer starts all betting stages
-        assertEq(room.currentPlayerIndex(), 1, "Starting PreFlop: Current player index is not 1");
-        assertEq(room.lastRaiseIndex(), 1, "Starting PreFlop: Last raise index is not 1");
+        assertEq(
+            room.currentPlayerIndex(),
+            1,
+            "Starting PreFlop: Current player index is 1(p2, left of the dealer)"
+        );
+        assertEq(
+            room.lastRaiseIndex(),
+            1,
+            "Starting PreFlop: Last raise index is 1 (default left of the dealer)"
+        );
         // TODO: verify that each player can decrypt their cards
 
         // Start preflop betting player 2 (left of the dealer)
         // player 2 should submit their action
-        // test that player 1 cannot submit an action too
+        // test that player 1 cannot submit an action first
         vm.startPrank(player1);
         vm.expectRevert("Not your turn");
         room.submitAction(TexasHoldemRoom.Action.Check, 0);
@@ -588,7 +596,22 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         decryptionValuesBytesFlop[0] = decryptionValuesFlop[0].val;
         decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
         decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
+
+        // assert that none of the community cards are not set yet
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "");
+        // assertEq(room.communityCards(2), "");
+        // assertEq(room.communityCards(1), "");
+        // assertEq(room.communityCards(0), "");
+
+        vm.expectEmit();
+        emit DeckHandler.FlopRevealed(player2, "47", "0", "17");
         deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "");
+        // assertEq(room.communityCards(2), "17");
+        // assertEq(room.communityCards(1), "0");
+        // assertEq(room.communityCards(0), "47");
         vm.stopPrank();
 
         // We should be in the flop phase now
@@ -655,7 +678,14 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         cardIndexesTurn[0] = 9;
         decryptionValuesTurn[0] = BigNumbers.init(hex"3439", false);
         decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
+        vm.expectEmit();
+        emit DeckHandler.TurnRevealed(player2, "49");
         deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "49");
+        // assertEq(room.communityCards(2), "17");
+        // assertEq(room.communityCards(1), "0");
+        // assertEq(room.communityCards(0), "47");
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Turn));
@@ -699,7 +729,14 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         cardIndexesRiver[0] = 11;
         decryptionValuesRiver[0] = BigNumbers.init(hex"3334", false);
         decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
+        vm.expectEmit();
+        emit DeckHandler.RiverRevealed(player2, "34");
         deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
+        // assertEq(room.communityCards(4), "34");
+        // assertEq(room.communityCards(3), "49");
+        // assertEq(room.communityCards(2), "17");
+        // assertEq(room.communityCards(1), "0");
+        // assertEq(room.communityCards(0), "47");
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.River));

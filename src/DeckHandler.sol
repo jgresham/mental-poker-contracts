@@ -9,6 +9,7 @@ contract DeckHandler {
     using BigNumbers for BigNumber;
 
     BigNumber[] public encryptedDeck;
+    // string[5] public communityCards;
 
     CryptoUtils public cryptoUtils;
     TexasHoldemRoom public texasHoldemRoom;
@@ -28,6 +29,14 @@ contract DeckHandler {
         for (uint256 i = 0; i < 52; i++) {
             encryptedDeck.push(BigNumber({ val: "0", neg: false, bitlen: 2048 }));
         }
+    }
+
+    // todo: add a function to reset the deck after a round is over, only callable by the room contract
+    function resetDeck() external {
+        for (uint256 i = 0; i < 52; i++) {
+            encryptedDeck[i] = BigNumber({ val: "0", neg: false, bitlen: 2048 });
+        }
+        // communityCards = [];
     }
 
     // fully new function
@@ -82,27 +91,34 @@ contract DeckHandler {
             encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false);
         }
 
-        if (currentPlayerIndex == 1) {
-            // todo: it shouldn't be fixed at 1?
+        // The dealer always starts decrypting, so when we are back at the dealer,
+        // we know the last player has decrypted community cards, so emit/set the community cards
+        uint256 nextRevealPlayer = texasHoldemRoom.getNextActivePlayer(true);
+        if (nextRevealPlayer == texasHoldemRoom.dealerPosition()) {
             if (stage == TexasHoldemRoom.GameStage.RevealFlop) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[5]);
                 string memory card2 = cryptoUtils.decodeBigintMessage(encryptedDeck[6]);
                 string memory card3 = cryptoUtils.decodeBigintMessage(encryptedDeck[7]);
-                texasHoldemRoom.setCommunityCards(0, card1);
-                texasHoldemRoom.setCommunityCards(1, card2);
-                texasHoldemRoom.setCommunityCards(2, card3);
+                // texasHoldemRoom.setCommunityCards(0, card1);
+                // texasHoldemRoom.setCommunityCards(1, card2);
+                // texasHoldemRoom.setCommunityCards(2, card3);
                 emit FlopRevealed(msg.sender, card1, card2, card3);
+                // communityCards[0] = card1;
+                // communityCards[1] = card2;
+                // communityCards[2] = card3;
             } else if (stage == TexasHoldemRoom.GameStage.RevealTurn) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[9]);
-                texasHoldemRoom.setCommunityCards(3, card1);
+                // texasHoldemRoom.setCommunityCards(3, card1);
                 emit TurnRevealed(msg.sender, card1);
+                // communityCards[3] = card1;
             } else if (stage == TexasHoldemRoom.GameStage.RevealRiver) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[11]);
-                texasHoldemRoom.setCommunityCards(4, card1);
+                // texasHoldemRoom.setCommunityCards(4, card1);
                 emit RiverRevealed(msg.sender, card1);
+                // communityCards[4] = card1;
             }
         }
 
@@ -181,49 +197,39 @@ contract DeckHandler {
     /**
      * @dev Returns all simple public variables of the TexasHoldemRoom contract and the encrypted deck
      * To reduce the size of the TexasHoldemRoom contract, this function is put here.
-     * @return stage The current game stage
-     * @return smallBlind The small blind amount
-     * @return bigBlind The big blind amount
-     * @return dealerPosition The position of the dealer
-     * @return currentPlayerIndex The index of the current player
-     * @return lastRaiseIndex The index of the last player who raised
-     * @return pot The total pot amount
-     * @return currentStageBet The current bet amount for this stage
-     * @return numPlayers The number of players in the game
-     * @return isPrivate Whether the game is private
-     * @return communityCards The community cards revealed so far
      */
-    function getPublicVariables()
-        external
-        view
-        returns (
-            TexasHoldemRoom.GameStage,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            uint256,
-            bool,
-            // string[] memory,
-            bytes[] memory
-        )
-    {
-        return (
-            texasHoldemRoom.stage(),
-            texasHoldemRoom.smallBlind(),
-            texasHoldemRoom.bigBlind(),
-            texasHoldemRoom.dealerPosition(),
-            texasHoldemRoom.currentPlayerIndex(),
-            texasHoldemRoom.lastRaiseIndex(),
-            texasHoldemRoom.pot(),
-            texasHoldemRoom.currentStageBet(),
-            texasHoldemRoom.numPlayers(),
-            texasHoldemRoom.isPrivate(),
-            // texasHoldemRoom.communityCards(),
-            this.getEncryptedDeck()
-        );
+    struct BulkRoomData {
+        uint256 roundNumber;
+        TexasHoldemRoom.GameStage stage;
+        uint256 smallBlind;
+        uint256 bigBlind;
+        uint256 dealerPosition;
+        uint256 currentPlayerIndex;
+        uint256 lastRaiseIndex;
+        uint256 pot;
+        uint256 currentStageBet;
+        uint256 numPlayers;
+        bool isPrivate;
+        // string[] communityCards;
+        bytes[] encryptedDeck;
+    }
+
+    function getBulkRoomData() external view returns (BulkRoomData memory) {
+        return BulkRoomData({
+            roundNumber: texasHoldemRoom.roundNumber(),
+            stage: texasHoldemRoom.stage(),
+            smallBlind: texasHoldemRoom.smallBlind(),
+            bigBlind: texasHoldemRoom.bigBlind(),
+            dealerPosition: texasHoldemRoom.dealerPosition(),
+            currentPlayerIndex: texasHoldemRoom.currentPlayerIndex(),
+            lastRaiseIndex: texasHoldemRoom.lastRaiseIndex(),
+            pot: texasHoldemRoom.pot(),
+            currentStageBet: texasHoldemRoom.currentStageBet(),
+            numPlayers: texasHoldemRoom.numPlayers(),
+            isPrivate: texasHoldemRoom.isPrivate(),
+            encryptedDeck: this.getEncryptedDeck()
+        })
+        // communityCards,
+        ;
     }
 }
