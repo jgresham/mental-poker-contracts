@@ -768,7 +768,13 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
 
         // don't check equality of cards as we don't know them yet
         vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(address(player1), "21", "27");
+        emit TexasHoldemRoom.PlayerCardsRevealed(
+            address(player1),
+            "21",
+            "27",
+            PokerHandEvaluatorv2.HandRank.ThreeOfAKind,
+            400000010120006
+        );
         (string memory card1, string memory card2) =
             room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
         vm.stopPrank();
@@ -777,6 +783,8 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         // assert that card1 is in the deck (range 0 to 51)
         vm.assertTrue(pokerHandEvaluator.parseInt(card1) < 52);
         vm.assertTrue(pokerHandEvaluator.parseInt(card2) < 52);
+        TexasHoldemRoom.Player[] memory players = room.getPlayers();
+        vm.assertEq(players[0].handScore, 400000010120006);
 
         console.log("Player2 is revealing their cards");
         vm.startPrank(player2);
@@ -787,7 +795,9 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
 
         // don't check equality of cards as we don't know them yet
         vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(address(player2), "12", "51");
+        emit TexasHoldemRoom.PlayerCardsRevealed(
+            address(player2), "12", "51", PokerHandEvaluatorv2.HandRank.TwoPair, 300000014100012
+        );
         // also expect a winner event to be emitted
         // vm.expectEmit(address(room));
         // emit TexasHoldemRoom.RoundWinner(address(player2), 1);
@@ -800,6 +810,8 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         vm.assertTrue(pokerHandEvaluator.parseInt(card3) < 52);
         // assert that card4 is in the deck (range 0 to 51)
         vm.assertTrue(pokerHandEvaluator.parseInt(card4) < 52);
+        players = room.getPlayers();
+        vm.assertEq(players[1].handScore, 300000014100012);
 
         // todo: check cards exactly match an shuffled deck's cards (no dupes too)
 

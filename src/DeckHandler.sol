@@ -9,7 +9,7 @@ contract DeckHandler {
     using BigNumbers for BigNumber;
 
     BigNumber[] public encryptedDeck;
-    // string[5] public communityCards;
+    string[5] public communityCards;
 
     CryptoUtils public cryptoUtils;
     TexasHoldemRoom public texasHoldemRoom;
@@ -36,7 +36,7 @@ contract DeckHandler {
         for (uint256 i = 0; i < 52; i++) {
             encryptedDeck[i] = BigNumber({ val: "0", neg: false, bitlen: 2048 });
         }
-        // communityCards = [];
+        communityCards = ["", "", "", "", ""];
     }
 
     // fully new function
@@ -100,25 +100,20 @@ contract DeckHandler {
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[5]);
                 string memory card2 = cryptoUtils.decodeBigintMessage(encryptedDeck[6]);
                 string memory card3 = cryptoUtils.decodeBigintMessage(encryptedDeck[7]);
-                // texasHoldemRoom.setCommunityCards(0, card1);
-                // texasHoldemRoom.setCommunityCards(1, card2);
-                // texasHoldemRoom.setCommunityCards(2, card3);
                 emit FlopRevealed(msg.sender, card1, card2, card3);
-                // communityCards[0] = card1;
-                // communityCards[1] = card2;
-                // communityCards[2] = card3;
+                communityCards[0] = card1;
+                communityCards[1] = card2;
+                communityCards[2] = card3;
             } else if (stage == TexasHoldemRoom.GameStage.RevealTurn) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[9]);
-                // texasHoldemRoom.setCommunityCards(3, card1);
                 emit TurnRevealed(msg.sender, card1);
-                // communityCards[3] = card1;
+                communityCards[3] = card1;
             } else if (stage == TexasHoldemRoom.GameStage.RevealRiver) {
                 // convert the decrypted cards to a string
                 string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[11]);
-                // texasHoldemRoom.setCommunityCards(4, card1);
                 emit RiverRevealed(msg.sender, card1);
-                // communityCards[4] = card1;
+                communityCards[4] = card1;
             }
         }
 
@@ -194,6 +189,10 @@ contract DeckHandler {
         return encryptedDeck[cardIndex];
     }
 
+    function getCommunityCards() external view returns (string[5] memory) {
+        return communityCards;
+    }
+
     /**
      * @dev Returns all simple public variables of the TexasHoldemRoom contract and the encrypted deck
      * To reduce the size of the TexasHoldemRoom contract, this function is put here.
@@ -210,7 +209,7 @@ contract DeckHandler {
         uint256 currentStageBet;
         uint256 numPlayers;
         bool isPrivate;
-        // string[] communityCards;
+        string[5] communityCards;
         bytes[] encryptedDeck;
     }
 
@@ -227,9 +226,8 @@ contract DeckHandler {
             currentStageBet: texasHoldemRoom.currentStageBet(),
             numPlayers: texasHoldemRoom.numPlayers(),
             isPrivate: texasHoldemRoom.isPrivate(),
-            encryptedDeck: this.getEncryptedDeck()
-        })
-        // communityCards,
-        ;
+            encryptedDeck: this.getEncryptedDeck(),
+            communityCards: communityCards
+        });
     }
 }
