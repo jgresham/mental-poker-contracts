@@ -784,12 +784,16 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         // string memory card1 = cryptoUtils.decodeBigintMessage(encryptedCard1.c1);
         // string memory card2 = cryptoUtils.decodeBigintMessage(encryptedCard2.c1);
         vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(address(player1), "0", "2");
+        emit TexasHoldemRoom.PlayerCardsRevealed(
+            address(player1), "0", "2", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
+        );
         (string memory card1, string memory card2) =
             room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
         vm.stopPrank();
         vm.assertEq(card1, "0");
         vm.assertEq(card2, "2");
+        TexasHoldemRoom.Player[] memory players = room.getPlayers();
+        vm.assertEq(players[0].handScore, 600001311090807);
 
         console.log("Player2 is revealing their cards");
         vm.startPrank(player2);
@@ -799,16 +803,43 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             CryptoUtils.EncryptedCard({ c1: c1p2, c2: deckHandler.getEncrypedCard(3) });
 
         vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(address(player2), "1", "3");
+        emit TexasHoldemRoom.PlayerCardsRevealed(
+            address(player2), "1", "3", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
+        );
         // also expect a winner event to be emitted
-        // vm.expectEmit(address(room));
-        // emit TexasHoldemRoom.RoundWinner(address(player2), 1);
+        vm.expectEmit(address(room));
+        uint8[] memory winnerPlayerIndexes = new uint8[](2);
+        winnerPlayerIndexes[0] = 0;
+        winnerPlayerIndexes[1] = 1;
+        address[] memory winnerAddresses = new address[](2);
+        winnerAddresses[0] = address(player1);
+        winnerAddresses[1] = address(player2);
+        emit TexasHoldemRoom.PotWon(winnerAddresses, winnerPlayerIndexes, 200);
         (string memory card3, string memory card4) =
             room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
         vm.stopPrank();
         vm.assertEq(card3, "1");
         vm.assertEq(card4, "3");
         // todo: check cards exactly match an unshuffled deck's cards
+        players = room.getPlayers();
+        vm.assertEq(players[1].handScore, 600001311090807);
+
+        // room should be in shuffle stage now
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Shuffle));
+        // the players bets should be reset and each player should have received half the pot
+        //(back to starting amount)
+        players = room.getPlayers();
+        for (uint8 i = 0; i < room.numPlayers(); i++) {
+            assertEq(players[i].currentStageBet, 0);
+            assertEq(players[i].totalRoundBet, 0);
+            assertEq(players[i].chips, 1000);
+        }
+        assertEq(room.currentStageBet(), 0);
+        assertEq(room.pot(), 0);
+        // player at index 0 was dealer last round, so dealer position is now 1
+        assertEq(room.currentPlayerIndex(), 1);
+        // assertEq(room.lastRaiseIndex(), 0);
+        assertEq(room.dealerPosition(), 1);
 
         //         bytes memory expectedMessageBytes = hex"30";
         //        BigNumber memory testMessage = BigNumbers.init(expectedMessageBytes, false);
