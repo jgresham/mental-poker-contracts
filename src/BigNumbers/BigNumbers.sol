@@ -537,7 +537,10 @@ library BigNumbers {
          * - modular inverse exists for values base and modulus.
          * otherwise it fails.
          */
-        require(cmp(modmul(a, r, n), one(), true) == 0);
+        require(
+            cmp(modmul(a, r, n), one(), true) == 0,
+            "BigNumbers.modinvVerify(): Invalid modular inverse"
+        );
 
         return true;
     }

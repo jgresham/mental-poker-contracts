@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import "forge-std/Test.sol";
 import "../src/TexasHoldemRoom.sol";
@@ -24,6 +24,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
     BigNumber c1p1;
     BigNumber r1;
     BigNumber c1Inverse1;
+    BigNumber c1InversePowPrivate1;
     bytes[] encryptedDeck1bytes;
 
     BigNumber publicKey2;
@@ -31,15 +32,15 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
     BigNumber c1p2;
     BigNumber r2;
     BigNumber c1Inverse2;
+    BigNumber c1InversePowPrivate2;
     bytes[] encryptedDeck2bytes;
 
     function setUp() public {
         cryptoUtils = new CryptoUtils();
         pokerHandEvaluator = new PokerHandEvaluatorv2();
-        room = new TexasHoldemRoom(
-            address(cryptoUtils), address(pokerHandEvaluator), SMALL_BLIND, false
-        );
-        deckHandler = new DeckHandler(address(room), address(cryptoUtils));
+        room = new TexasHoldemRoom(address(cryptoUtils), SMALL_BLIND, false);
+        deckHandler =
+            new DeckHandler(address(room), address(cryptoUtils), address(pokerHandEvaluator));
         room.setDeckHandler(address(deckHandler));
         encryptedDeck1bytes = new bytes[](52);
         encryptedDeck2bytes = new bytes[](52);
@@ -262,6 +263,9 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             hex"42487fec44e8ebebfae79a43ec4f15e29a5786ed7f560c14b1e063d1a665c26364c68ecb046fb187000fb48f5cf25cdbe5fe556040b8c501744ec352623fa6dde35cb29e971309bd5ffd2350336972a64e12fb38ba7470d08b5b05b065c42e82b48c97a3e4c577d7b78576cda00deb05caf92f56a7bb414a54262a399182ed8cf49954981886269ab273daa3da74e75541c5045f88dc57420e5d015e9f6cab562fa6580351410c31ed0401be6e6784641ffbd822fe65f0db9aed947d9eb8caf50ffa31c143492fc54aeda70c7ae710f4bd3b4fe3bb5801e38d72f47652f92db0d8f3cf2dd331a7786c887a6a176414289e76a7eb23c88bb87f05c01e21af7aac";
         bytes memory c1Inverse1bytes =
             hex"d0e4ca249ae1abf77c69caf75b86cd62a81508db62ecbb1a4865f2c7c5b1c869650bc6e29726dfde0954bb40e91a2a1b58e2d2dce2ea8839ae99f4aeb344783178bd9bb2e97747f01fdd1c347491ad8073bab344cae983571fb3d33e1b1fbd5112792d8092651304519e14fe1d02f4f33c8df47f5d1f4ccb939dbc1427bc1005fae10c708737121058999d55130f8dfca7e6a1b9e06bcf7fd568995657ee2ad21fa8c27ee64c11ab7469a6034aaacc4ae971ec0af448fc5ef2c5d1d51d82960ca22f7267aac4b7ad414546bec436f225b8b1e4b42d555cee07abbe539e55aa8f80d353a03d7a7b128099aa22a44dd2ac2d7528d55a953f8c293479c52bcad705";
+        bytes memory c1InversePowPrivateKey =
+            hex"d0e4ca249ae1abf77c69caf75b86cd62a81508db62ecbb1a4865f2c7c5b1c869650bc6e29726dfde0954bb40e91a2a1b58e2d2dce2ea8839ae99f4aeb344783178bd9bb2e97747f01fdd1c347491ad8073bab344cae983571fb3d33e1b1fbd5112792d8092651304519e14fe1d02f4f33c8df47f5d1f4ccb939dbc1427bc1005fae10c708737121058999d55130f8dfca7e6a1b9e06bcf7fd568995657ee2ad21fa8c27ee64c11ab7469a6034aaacc4ae971ec0af448fc5ef2c5d1d51d82960ca22f7267aac4b7ad414546bec436f225b8b1e4b42d555cee07abbe539e55aa8f80d353a03d7a7b128099aa22a44dd2ac2d7528d55a953f8c293479c52bcad705";
+
         bytes memory publicKey2bytes =
             hex"db24a5cd01c51e96022355d1eefba6450bcb5e5eb7bf63e9cc65edb689c3767e1f385675d59642b4cab1b35899116715219de479814f8d968f2281d68205b11dc2cb5e27634c256feaabc81d5f8bacd734c42a6001517beed16a5c348a81ae372cb9637f54b496e28f04f7f20c852973888436053fa84e00cd512b477550beff3c1231b0fa2b505feca3d18ebf1dd3d70690558c179ae271e5b38ae06969b260962b2b008924e283b53ce8126509c0c19090621f960a3ce7cf5eb175246f08625854d438514c2a6842439f91fd693c6540b33f2a3d60907d201f97abeede6556f1ade44d2071ecb609857bbb65a8797d713f8c5e2097f2c9ead14e13037ed3cc";
         bytes memory privateKey2bytes =
@@ -272,16 +276,20 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             hex"6f7374f6984a5cacf37ae19ba3c3ada7b4b8c5c6aa772bd32b359b1861d7161f11093300a6aca0e3615874369d89cd64f65dec586a272bf2e3ecf0ad0ef5059c4f42487901661f32c9f9abf5716505467fad3363888746e054ff93782c35320940ed140ebd4543b1b0ef2ea321b0de1351af33b47fc49c808eb07523eca5be7b09dfab97c8f2c8f413a3ab5390e62aff0fa333729f36179eaefbb69b8d2ca3b4e8179afdc5eeb021e92c42aea21f8179d76288870975bf05b9caa4e8219b6c61d8b7fc04109e2734f50bbbb470b70a0269177472c95dd26130d0f1133c760a146eafff567afa75588bdde14aeacd51680299ab32423c67d3723a195787accac7";
         bytes memory c1Inverse2bytes =
             hex"9cb24052e210456485443b5dabc5df6790bebada5773b60a0d224551bfb7361cae108d2de8975310ba2560f4d3fe1336eb884e8b4ba04c0f754264fdae6c1df6f6b836ba8a5f243770c46e6d836e37f30f88aa14ac187fad220652e56daceaca4757e95fe3da86c370ca737cacb457ebfd5492c945391dce8968fb970683026258eaabfee83b9a05433329e4a8b3495c2162248dc95ea02c3d98e02073d3ce28ff97b9ff701c8894d817f6b46782d662c63720e9d2d8b50a466b402ec5a64b75e1a2f81e40ab06be8ff336605378ddb5b92ee6e41274f8b98fa7e7547c6d68a043f71ae4464d7406b88a8c7ee74553eaae2aa2399f0f4a15639cb24cdc36f7ca";
+        bytes memory c1InversePowPrivateKey2 =
+            hex"9cb24052e210456485443b5dabc5df6790bebada5773b60a0d224551bfb7361cae108d2de8975310ba2560f4d3fe1336eb884e8b4ba04c0f754264fdae6c1df6f6b836ba8a5f243770c46e6d836e37f30f88aa14ac187fad220652e56daceaca4757e95fe3da86c370ca737cacb457ebfd5492c945391dce8968fb970683026258eaabfee83b9a05433329e4a8b3495c2162248dc95ea02c3d98e02073d3ce28ff97b9ff701c8894d817f6b46782d662c63720e9d2d8b50a466b402ec5a64b75e1a2f81e40ab06be8ff336605378ddb5b92ee6e41274f8b98fa7e7547c6d68a043f71ae4464d7406b88a8c7ee74553eaae2aa2399f0f4a15639cb24cdc36f7ca";
         publicKey1 = BigNumbers.init(publicKey1bytes, false);
         privateKey1 = BigNumbers.init(privateKey1bytes, false);
         c1p1 = BigNumbers.init(c1p1bytes, false);
         r1 = BigNumbers.init(r1bytes, false);
         c1Inverse1 = BigNumbers.init(c1Inverse1bytes, false);
+        c1InversePowPrivate1 = BigNumbers.init(c1InversePowPrivateKey, false);
         publicKey2 = BigNumbers.init(publicKey2bytes, false);
         privateKey2 = BigNumbers.init(privateKey2bytes, false);
         c1p2 = BigNumbers.init(c1p2bytes, false);
         r2 = BigNumbers.init(r2bytes, false);
         c1Inverse2 = BigNumbers.init(c1Inverse2bytes, false);
+        c1InversePowPrivate2 = BigNumbers.init(c1InversePowPrivateKey2, false);
         // BigNumber memory card1 = BigNumbers.init(encryptedDeck1bytes[0], false);
         // encryptedDeck1 = new BigNumber[](52);
         // for (uint256 i = 0; i < 52; i++) {
@@ -767,16 +775,23 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             CryptoUtils.EncryptedCard({ c1: c1p1, c2: deckHandler.getEncrypedCard(2) });
 
         // don't check equality of cards as we don't know them yet
-        vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(
+        vm.expectEmit(address(deckHandler));
+        emit DeckHandler.PlayerCardsRevealed(
             address(player1),
             "21",
             "27",
             PokerHandEvaluatorv2.HandRank.ThreeOfAKind,
             400000010120006
         );
-        (string memory card1, string memory card2) =
-            room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
+        // (string memory card1, string memory card2) =
+        //     room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
+        (string memory card1, string memory card2) = deckHandler.revealMyCards(
+            c1p1.val,
+            // deckHandler.getEncrypedCard(0).val,
+            // deckHandler.getEncrypedCard(2).val,
+            privateKey1.val,
+            c1InversePowPrivate1.val
+        );
         vm.stopPrank();
         console.log("card1: %s %s", card1, pokerHandEvaluator.stringToHumanReadable(card1));
         console.log("card2: %s %s", card2, pokerHandEvaluator.stringToHumanReadable(card2));
@@ -794,15 +809,22 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
             CryptoUtils.EncryptedCard({ c1: c1p2, c2: deckHandler.getEncrypedCard(3) });
 
         // don't check equality of cards as we don't know them yet
-        vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(
+        vm.expectEmit(address(deckHandler));
+        emit DeckHandler.PlayerCardsRevealed(
             address(player2), "12", "51", PokerHandEvaluatorv2.HandRank.TwoPair, 300000014100012
         );
         // also expect a winner event to be emitted
         // vm.expectEmit(address(room));
         // emit TexasHoldemRoom.RoundWinner(address(player2), 1);
-        (string memory card3, string memory card4) =
-            room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
+        // (string memory card3, string memory card4) =
+        //     room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
+        (string memory card3, string memory card4) = deckHandler.revealMyCards(
+            c1p2.val,
+            // deckHandler.getEncrypedCard(1).val,
+            // deckHandler.getEncrypedCard(3).val,
+            privateKey2.val,
+            c1InversePowPrivate2.val
+        );
         vm.stopPrank();
         console.log("card3: %s %s", card3, pokerHandEvaluator.stringToHumanReadable(card3));
         console.log("card4: %s %s", card4, pokerHandEvaluator.stringToHumanReadable(card4));

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import "forge-std/Test.sol";
 import "../src/TexasHoldemRoom.sol";
@@ -37,8 +37,8 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
     function setUp() public {
         cryptoUtils = new CryptoUtils();
         handEvaluator = new PokerHandEvaluatorv2();
-        room = new TexasHoldemRoom(address(cryptoUtils), address(handEvaluator), SMALL_BLIND, false);
-        deckHandler = new DeckHandler(address(room), address(cryptoUtils));
+        room = new TexasHoldemRoom(address(cryptoUtils), SMALL_BLIND, false);
+        deckHandler = new DeckHandler(address(room), address(cryptoUtils), address(handEvaluator));
         room.setDeckHandler(address(deckHandler));
         encryptedDeck1bytes = new bytes[](52);
         encryptedDeck2bytes = new bytes[](52);
@@ -410,7 +410,12 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         assertEq(uint256(stage2), uint256(TexasHoldemRoom.GameStage.Shuffle));
         assertEq(room.dealerPosition(), 0);
         assertEq(room.currentPlayerIndex(), 0);
-
+        uint8[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
+        assertEq(playerCardIndexes[0], 0);
+        assertEq(playerCardIndexes[1], 2);
+        playerCardIndexes = room.getPlayersCardIndexes(1);
+        assertEq(playerCardIndexes[0], 1);
+        assertEq(playerCardIndexes[1], 3);
         // The Dealer should be player1
         // and player1 should submit their encrypted shuffle first
         vm.startPrank(player1);
@@ -783,12 +788,14 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
             CryptoUtils.EncryptedCard({ c1: c1p1, c2: deckHandler.getEncrypedCard(2) });
         // string memory card1 = cryptoUtils.decodeBigintMessage(encryptedCard1.c1);
         // string memory card2 = cryptoUtils.decodeBigintMessage(encryptedCard2.c1);
-        vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(
+        vm.expectEmit(address(deckHandler));
+        emit DeckHandler.PlayerCardsRevealed(
             address(player1), "0", "2", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
         );
+        // (string memory card1, string memory card2) =
+        //     room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
         (string memory card1, string memory card2) =
-            room.revealMyCards(encryptedCard1, encryptedCard2, privateKey1, c1Inverse1);
+            deckHandler.revealMyCards(c1p1.val, privateKey1.val, c1Inverse1.val);
         vm.stopPrank();
         vm.assertEq(card1, "0");
         vm.assertEq(card2, "2");
@@ -802,8 +809,8 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         CryptoUtils.EncryptedCard memory encryptedCard4 =
             CryptoUtils.EncryptedCard({ c1: c1p2, c2: deckHandler.getEncrypedCard(3) });
 
-        vm.expectEmit(address(room));
-        emit TexasHoldemRoom.PlayerCardsRevealed(
+        vm.expectEmit(address(deckHandler));
+        emit DeckHandler.PlayerCardsRevealed(
             address(player2), "1", "3", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
         );
         // also expect a winner event to be emitted
@@ -815,8 +822,15 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         winnerAddresses[0] = address(player1);
         winnerAddresses[1] = address(player2);
         emit TexasHoldemRoom.PotWon(winnerAddresses, winnerPlayerIndexes, 200);
-        (string memory card3, string memory card4) =
-            room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
+        // (string memory card3, string memory card4) =
+        //     room.revealMyCards(encryptedCard3, encryptedCard4, privateKey2, c1Inverse2);
+        (string memory card3, string memory card4) = deckHandler.revealMyCards(
+            c1p2.val,
+            // deckHandler.getEncrypedCard(1).val,
+            // deckHandler.getEncrypedCard(3).val,
+            privateKey2.val,
+            c1Inverse2.val
+        );
         vm.stopPrank();
         vm.assertEq(card3, "1");
         vm.assertEq(card4, "3");

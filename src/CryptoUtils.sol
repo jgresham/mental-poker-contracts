@@ -17,6 +17,8 @@ contract CryptoUtils {
     uint256 public constant MAX_PLAYERS = 10;
     uint8 public constant EMPTY_SEAT = 255;
 
+    event CULog(string message);
+
     constructor() {
         // Initialize P_2048
         bytes memory p2048Bytes =
@@ -56,12 +58,15 @@ contract CryptoUtils {
     function verifyDecryptCard(
         EncryptedCard memory encryptedCard,
         BigNumber memory privateKey,
-        BigNumber memory c1Inverse
-    ) public view returns (BigNumber memory) {
+        BigNumber memory c1InversePowPrivateKey
+    ) public returns (BigNumber memory) {
         BigNumber memory c1PowPrivateKey = BigNumbers.modexp(encryptedCard.c1, privateKey, P_2048);
-        bool verifyResult = BigNumbers.modinvVerify(c1PowPrivateKey, P_2048, c1Inverse);
+        emit CULog("c1PowPrivateKey");
+        bool verifyResult = BigNumbers.modinvVerify(c1PowPrivateKey, P_2048, c1InversePowPrivateKey);
+        emit CULog("verifyResult");
         require(verifyResult, "Invalid modular inverse");
-        return BigNumbers.modmul(encryptedCard.c2, c1Inverse, P_2048);
+        emit CULog("modmul");
+        return BigNumbers.modmul(encryptedCard.c2, c1InversePowPrivateKey, P_2048);
     }
 
     // This is on chain in case of a dispute and we want to verify that a user correctly encrypted each card

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
 import { TexasHoldemRoom } from "../src/TexasHoldemRoom.sol";
 import { Script, console } from "forge-std/Script.sol";
@@ -18,9 +18,9 @@ contract DeployAll is Script {
         // Deploy the contract
         CryptoUtils cryptoUtils = new CryptoUtils();
         PokerHandEvaluatorv2 handEvaluator = new PokerHandEvaluatorv2();
-        TexasHoldemRoom room =
-            new TexasHoldemRoom(address(cryptoUtils), address(handEvaluator), uint256(40), false);
-        DeckHandler deckHandler = new DeckHandler(address(room), address(cryptoUtils));
+        TexasHoldemRoom room = new TexasHoldemRoom(address(cryptoUtils), uint256(40), false);
+        DeckHandler deckHandler =
+            new DeckHandler(address(room), address(cryptoUtils), address(handEvaluator));
         room.setDeckHandler(address(deckHandler));
         vm.stopBroadcast();
         vm.startBroadcast(0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97);
