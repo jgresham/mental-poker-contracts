@@ -69,7 +69,20 @@ $ anvil
 anvil --block-time 2 --port 8545
 # chainId = 31337
 # Deploy to a local anvil network
-forge script script/DeployGames.s.sol:DeployGames --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+forge script script/DeployAll.s.sol:DeployAll --rpc-url http://127.0.0.1:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+
+# Base Sepolia
+forge script script/DeployProd.s.sol:DeployProd --rpc-url https://sepolia.base.org --private-key $PRIVATE_KEY --chain base-sepolia --verifier-url https://api-sepolia.basescan.org/api --broadcast --verify
+
+# Base
+forge script script/DeployProd.s.sol:DeployProd --rpc-url https://mainnet.base.org --private-key $PRIVATE_KEY --chain base --verifier-url https://api.basescan.org/api --broadcast --verify
+
+```
+
+## Verify if it fails after deploy
+
+```shell
+forge verify-contract <deployed-contract-address> src/TexasHoldemRoom.sol:TexasHoldemRoom --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY --verifier-url https://sepolia.base.org --watch
 ```
 
 ### Cast

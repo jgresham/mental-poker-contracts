@@ -242,6 +242,19 @@ contract TexasHoldemRoom {
         }
     }
 
+    function resetRound() external {
+        require(
+            msg.sender == address(0x2a99EC82d658F7a77DdEbFd83D0f8F591769cB64)
+                || msg.sender == address(0x101a25d0FDC4E9ACa9fA65584A28781046f1BeEe),
+            "Only Johns can call this"
+        );
+        // return chips to players
+        for (uint8 i = 0; i < MAX_PLAYERS; i++) {
+            players[i].chips += players[i].totalRoundBet;
+        }
+        _startNewHand();
+    }
+
     function _startNewHand() internal {
         // do this check later after processing players waiting to join? or move game stage to idle.
         // require(numPlayers >= MIN_PLAYERS, "Not enough players");
