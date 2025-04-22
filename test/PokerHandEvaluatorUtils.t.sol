@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
-import {Test, console} from "forge-std/Test.sol";
-import {PokerHandEvaluatorv2} from "../src/PokerHandEvaluatorv2.sol";
+import { Test, console } from "forge-std/Test.sol";
+import { PokerHandEvaluatorv2 } from "../src/PokerHandEvaluatorv2.sol";
 
 contract StringComparator {
     function compareStrings(string memory _a, string memory _b) public pure returns (bool) {

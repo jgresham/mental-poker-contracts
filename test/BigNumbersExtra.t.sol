@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.29;
 
-import {Test, console} from "forge-std/Test.sol";
+import { Test, console } from "forge-std/Test.sol";
 import "../src/BigNumbers/BigNumbers.sol";
 
 bytes constant P_2048 =
@@ -111,4 +111,18 @@ contract BigNumbersTest is Test {
     //     bool verifyResult = BigNumbers.divVerify(a, b, result);
     //     assertEq(verifyResult, true);
     // }
+
+    function testLargeModInverseVerify10e10Nums() public view {
+        // bytes memory aBytes = 3840928903
+        bytes memory aBytes = hex"E4EFEC87";
+        // bytes memory mBytes = 2342343;
+        bytes memory mBytes = hex"23BDC7";
+        // 2154565
+        bytes memory resultVal = hex"20E045";
+        BigNumber memory a = BigNumbers.init(aBytes, false);
+        BigNumber memory m = BigNumbers.init(mBytes, false);
+        BigNumber memory resultModInv = BigNumbers.init(resultVal, false);
+        bool verifyResult = BigNumbers.modinvVerify(a, m, resultModInv);
+        assertEq(verifyResult, true);
+    }
 }
