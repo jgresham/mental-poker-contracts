@@ -98,3 +98,24 @@ $ forge --help
 $ anvil --help
 $ cast --help
 ```
+
+
+## Deploys
+Mon, Apr 28th 2025
+```
+== Logs ==
+  Contract TexasHoldemRoom deployed at: 0xf34890f942220f48391BA33Ff053f64Aa8979956
+  Contract DeckHandler deployed at: 0x8ad3D9cf837117d44Ec08e77a3C38420f92243E9
+
+## Setting up 1 EVM.
+
+==========================
+
+Chain 8453
+
+Estimated gas price: 0.007277138 gwei
+
+Estimated total gas used for script: 27820265
+
+Estimated amount required: 0.00020245190760157 ETH
+```
