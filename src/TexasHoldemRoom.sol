@@ -279,12 +279,23 @@ contract TexasHoldemRoom {
             }
         }
 
-        // process players that joined the game after the round started
+        // process players that joined the game after the round started and reset their states
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {
             if (players[i].joinedAndWaitingForNextRound) {
                 players[i].joinedAndWaitingForNextRound = false;
             }
+            // Reset player states
+            players[i].currentStageBet = 0;
+            players[i].totalRoundBet = 0;
+            players[i].hasFolded = false;
+            players[i].hasChecked = false;
+            players[i].isAllIn = false;
+            players[i].cards = ["", ""];
+            players[i].handScore = 0;
         }
+
+        // reset the deck
+        deckHandler.resetDeck();
 
         if (numPlayers < MIN_PLAYERS) {
             // not enough players to start the round
@@ -294,6 +305,7 @@ contract TexasHoldemRoom {
             return;
         }
 
+        // todo: what to do if there are no players, or only 1 player left?
         // Now that all player join/leaves have been processed, update the dealer position
         // and the current player index
         // The next dealer position is the next player clockwise of the previous dealer
@@ -318,25 +330,12 @@ contract TexasHoldemRoom {
         currentPlayerIndex = dealerPosition; // dealer always starts shuffling
         lastRaiseIndex = currentPlayerIndex; // todo: check if this is correct
 
-        // Reset player states
-        for (uint8 i = 0; i < MAX_PLAYERS; i++) {
-            players[i].currentStageBet = 0;
-            players[i].totalRoundBet = 0;
-            players[i].hasFolded = false;
-            players[i].hasChecked = false;
-            players[i].isAllIn = false;
-            players[i].cards = ["", ""];
-        }
-
         // todo: blinds
         // uint256 sbPosition = (dealerPosition + 1) % numPlayers;
         // uint256 bbPosition = (dealerPosition + 2) % numPlayers;
 
         // _placeBet(sbPosition, smallBlind);
         // _placeBet(bbPosition, bigBlind);
-
-        // reset the deck
-        deckHandler.resetDeck();
 
         stage = GameStage.Idle;
         _progressGame();
@@ -474,7 +473,10 @@ contract TexasHoldemRoom {
             // only 1 active player, so they win the pot
             uint8 lastActivePlayerIndex;
             for (uint8 i = 0; i < MAX_PLAYERS; i++) {
-                if (!players[i].hasFolded) {
+                if (
+                    players[i].addr != address(0) && !players[i].joinedAndWaitingForNextRound
+                        && !players[i].hasFolded
+                ) {
                     lastActivePlayerIndex = i;
                     break;
                 }
@@ -655,7 +657,10 @@ contract TexasHoldemRoom {
     function countActivePlayers() public view returns (uint8) {
         uint8 count = 0;
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {
-            if (players[i].addr != address(0) && !players[i].hasFolded) {
+            if (
+                players[i].addr != address(0) && !players[i].hasFolded
+                    && !players[i].joinedAndWaitingForNextRound
+            ) {
                 count++;
             }
         }
@@ -734,6 +739,7 @@ contract TexasHoldemRoom {
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {
             // This is set to 0 after each round,
             // so players with a score have just revealed their cards
+            // This should by default exclude null players and players who joined the game after the round started
             if (players[i].handScore > 0) {
                 count++;
             }
