@@ -36,6 +36,8 @@ https://book.getfoundry.sh/
 
 ```shell
 $ forge build
+# to get the contract byte sizes (evm limitation at 25KB currently, soon 256KB), run
+$ forge build --sizes
 ```
 
 ### Test

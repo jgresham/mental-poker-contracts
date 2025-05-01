@@ -396,8 +396,8 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
 
     // For one player submit: (gas: 3,486,222) to save state (and emit event)
     // For one play submit: (gas: 768,315) to just emit event
-    function test_Shuffle2Players() public {
-        console.log("test_Shuffle2Players");
+    function test_RealKeysShuffle2Players() public {
+        console.log("test_RealKeysShuffle2Players");
         console.log("encryptedDeck1bytes.length");
         console.log(encryptedDeck1bytes.length);
         console.log("encryptedDeck2bytes.length");
@@ -833,8 +833,9 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         // assert that card4 is in the deck (range 0 to 51)
         vm.assertTrue(pokerHandEvaluator.parseInt(card4) < 52);
         players = room.getPlayers();
-        vm.assertEq(players[1].handScore, 300000014100012);
-
+        // handScores get set to 0 after a new round!
+        vm.assertEq(players[1].handScore, 0);
+        vm.assertEq(players[0].handScore, 0);
         // todo: check cards exactly match an shuffled deck's cards (no dupes too)
 
         //         bytes memory expectedMessageBytes = hex"30";

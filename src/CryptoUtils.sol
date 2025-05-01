@@ -31,6 +31,7 @@ contract CryptoUtils {
         BigNumber c2; // 2048-bit number
     }
 
+    // May no longer be accurate
     // /**
     //  * @dev Decrypts a card using ElGamal decryption
     //  * @param encryptedCard The encrypted card (c1, c2)
@@ -136,44 +137,4 @@ contract CryptoUtils {
     function strEq(string memory a, string memory b) public pure returns (bool) {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
-
-    // Test failed: actually increased contract size by 2k in runtime and initialization
-    /**
-     * @dev Finds the next active player index to the left of the current player using seat position
-     * @dev Skips players that have folded or are all-in
-     * @dev Returns the current player index if no active players are found
-     */
-    // function getNextActivePlayer(
-    //     bool requireActive,
-    //     TexasHoldemRoom.Player[] memory players,
-    //     uint256 currentPlayerIndex,
-    //     uint256 numPlayers,
-    //     uint8[MAX_PLAYERS] memory seatPositionToPlayerIndex
-    // ) public view returns (uint256) {
-    //     // get the current player's seat position
-    //     uint8 currentSeatPosition = players[currentPlayerIndex].seatPosition; // 1, 1
-    //     // loop over the players in the ascending order of their seat positions
-    //     // until we find an active player
-    //     // TODO: create a number of players that played in the current round and use that for the modulo
-    //     // and for the next seat index. (don't use players that joined the game after the round started)
-    //     uint256 nextSeatIndex = (currentSeatPosition + 1) % numPlayers; // 2 % 2 = 0
-    //     if (!requireActive) {
-    //         return seatPositionToPlayerIndex[nextSeatIndex];
-    //     } else {
-    //         while (nextSeatIndex != currentSeatPosition) {
-    //             // TODO: add a status for a player that has joined, but did not start the round
-    //             uint8 playerIndex = seatPositionToPlayerIndex[nextSeatIndex];
-    //             if (playerIndex != EMPTY_SEAT) {
-    //                 TexasHoldemRoom.Player memory checkPlayer = players[playerIndex];
-    //                 // TODO: check if the player has cards (joined before the round started)
-    //                 if (!checkPlayer.hasFolded && !checkPlayer.isAllIn) {
-    //                     return playerIndex;
-    //                 }
-    //             }
-    //             nextSeatIndex = (nextSeatIndex + 1) % numPlayers;
-    //         }
-    //         // if no active players are found, return the current player
-    //         return currentPlayerIndex;
-    //     }
-    // }
 }
