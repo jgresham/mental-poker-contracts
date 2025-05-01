@@ -33,7 +33,7 @@ contract DeckHandler {
         PokerHandEvaluatorv2.HandRank rank,
         uint256 handScore
     );
-    event THP_Log(string message);
+    // event THP_Log(string message);
 
     constructor(address _texasHoldemRoom, address _cryptoUtils, address _handEvaluator) {
         texasHoldemRoom = TexasHoldemRoom(_texasHoldemRoom);
@@ -197,10 +197,10 @@ contract DeckHandler {
         emit PlayerCardsRevealed(
             address(msg.sender), card1, card2, playerHand.rank, playerHandScore
         );
-        emit THP_Log("emit PlayerCardsRevealed() in revealMyCards()");
+        // emit THP_Log("emit PlayerCardsRevealed() in revealMyCards()");
         // return true if the encrypted cards match the decrypted cards from the deck?
         texasHoldemRoom.progressGame();
-        emit THP_Log("after texasHoldemRoom.progressGame()");
+        // emit THP_Log("after texasHoldemRoom.progressGame()");
         return (card1, card2);
     }
 
