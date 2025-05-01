@@ -390,8 +390,8 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
 
     // For one player submit: (gas: 3,486,222) to save state (and emit event)
     // For one play submit: (gas: 768,315) to just emit event
-    function test_Shuffle2Players() public {
-        console.log("test_Shuffle2Players");
+    function test_RealKeysNoShuffle2Players() public {
+        console.log("test_RealKeysNoShuffle2Players");
         console.log("encryptedDeck1bytes.length");
         console.log(encryptedDeck1bytes.length);
         console.log("encryptedDeck2bytes.length");
@@ -836,8 +836,9 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         vm.assertEq(card4, "3");
         // todo: check cards exactly match an unshuffled deck's cards
         players = room.getPlayers();
-        vm.assertEq(players[1].handScore, 600001311090807);
-
+        // handScores get set to 0 after a new round!
+        vm.assertEq(players[1].handScore, 0);
+        vm.assertEq(players[0].handScore, 0);
         // room should be in shuffle stage now
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Shuffle));
         // the players bets should be reset and each player should have received half the pot

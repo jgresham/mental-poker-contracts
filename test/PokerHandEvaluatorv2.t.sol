@@ -231,4 +231,14 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluatorv2.HandRank.HighCard));
         assertEq(hand.score, 100000011097504);
     }
+
+    function test_bestHand2PairQueensTwos() public view {
+        // High Card: When no other hand is made
+        string[7] memory cards = ["2H", "QD", "3D", "AD", "2D", "QS", "6S"];
+        PokerHandEvaluatorv2.Hand memory hand = pokerHandEvaluator.findBestHandExternal2(cards);
+        console.log("High Card hand.rank: %s", uint256(hand.rank));
+        console.log("High Card hand.score: %s", hand.score);
+        assertEq(uint256(hand.rank), uint256(PokerHandEvaluatorv2.HandRank.TwoPair));
+        assertEq(hand.score, 300000012020014);
+    }
 }

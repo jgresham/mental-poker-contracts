@@ -22,14 +22,15 @@ contract DeployAll is Script {
         DeckHandler deckHandler =
             new DeckHandler(address(room), address(cryptoUtils), address(handEvaluator));
         room.setDeckHandler(address(deckHandler));
-        vm.stopBroadcast();
-        vm.startBroadcast(0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97);
-        room.joinGame();
-        vm.stopBroadcast();
-        vm.startBroadcast(0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6);
+        // vm.stopBroadcast();
+        // vm.startBroadcast(0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97);
+        // room.joinGame();
+        // vm.stopBroadcast();
+        // vm.startBroadcast(0x2a871d0798f97d79848a013d4936a73bf4cc922c825d33c1cf7073dff6d409c6);
+        // room.joinGame();
+
         // untested
         // vm.prank(player1);
-        room.joinGame();
         // vm.stopBroadcast();
         // vm.prank(player2);
         // room.joinGame();

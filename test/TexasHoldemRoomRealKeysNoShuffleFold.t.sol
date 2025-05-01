@@ -8,7 +8,7 @@ import "../src/BigNumbers/BigNumbers.sol";
 import "../src/CryptoUtils.sol";
 import "../src/DeckHandler.sol";
 
-contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
+contract TexasHoldemRoomRealKeysNoShuffleFoldTest is Test {
     using BigNumbers for BigNumber;
 
     TexasHoldemRoom public room;
@@ -298,8 +298,10 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.deal(player3, INITIAL_BALANCE);
     }
 
-    function test_RealKeysNoShuffle2PlayersRound2() public {
-        console.log("test_RealKeysNoShuffle2PlayersRound2");
+    // For one player submit: (gas: 3,486,222) to save state (and emit event)
+    // For one play submit: (gas: 768,315) to just emit event
+    function test_NoShuffle2PlayersFastFold() public {
+        console.log("test_NoShuffle2PlayersFastFold");
         console.log("encryptedDeck1bytes.length");
         console.log(encryptedDeck1bytes.length);
         console.log("encryptedDeck2bytes.length");
@@ -313,25 +315,65 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         room.joinGame();
         vm.stopPrank();
 
+        // Verify that the game state is now in the shuffle phase
+        TexasHoldemRoom.GameStage stage2 = room.stage();
+        assertEq(uint256(stage2), uint256(TexasHoldemRoom.GameStage.Shuffle));
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 0);
+        uint8[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
+        assertEq(playerCardIndexes[0], 0);
+        assertEq(playerCardIndexes[1], 2);
+        playerCardIndexes = room.getPlayersCardIndexes(1);
+        assertEq(playerCardIndexes[0], 1);
+        assertEq(playerCardIndexes[1], 3);
         // The Dealer should be player1
         // and player1 should submit their encrypted shuffle first
         vm.startPrank(player1);
+        // BigNumber[] memory encryptedShuffle = new BigNumber[](52);
+        // // initialize with 2048 bits of random data for each card
+        // for (uint256 i = 0; i < 52; i++) {
+        //     // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(i)));
+        //     // // Use the contract's instance to call init
+        //     // encryptedShuffle[i - 1] = BigNumbers.init(cardBytes, false, 2048);
+        //     // convert BigNumber to bytes back into a BigNumber
+        //     // bytes memory cardBytes = encryptedDeck1bytes[i];
+        //     encryptedShuffle[i] = BigNumbers.init(encryptedDeck1bytes[i], false);
+        // }
         bytes[] memory encryptedShuffleBytes = new bytes[](52);
         for (uint256 i = 0; i < 52; i++) {
             encryptedShuffleBytes[i] = encryptedDeck1bytes[i];
         }
+
         deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
         vm.stopPrank();
+
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 1);
 
         // TODO: encryptions should be calculated from player1's encrypted shuffle
         // player2 should submit their encrypted shuffle next
         vm.startPrank(player2);
+        // initialize with 2048 bits of random data for each card
+        // for (uint256 i = 0; i < 52; i++) {
+        //     // bytes memory cardBytes = abi.encodePacked(bytes32(uint256(1000 + i)));
+        //     // // Use the contract's instance to call init
+        //     // encryptedShuffle[i] = BigNumbers.init(cardBytes, false, 2048);
+        //     encryptedShuffle[i] = BigNumbers.init(encryptedDeck2bytes[i], false);
+        // }
+        // bytes[52] memory encryptedShuffleBytes = new bytes[52]();
         for (uint256 i = 0; i < 52; i++) {
             encryptedShuffleBytes[i] = encryptedDeck2bytes[i];
         }
 
         deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
+        // room.submitEncryptedShuffle(encryptedShuffle);
         vm.stopPrank();
+
+        // Verify that the game state is now in the deal phase
+        TexasHoldemRoom.GameStage stage3 = room.stage();
+        assertEq(uint256(stage3), uint256(TexasHoldemRoom.GameStage.RevealDeal));
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 0);
 
         // player 1 should submit their decryption values for player 2's cards
         vm.startPrank(player1);
@@ -357,6 +399,8 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.stopPrank();
         console.log("Player 1 submitted decryption values");
 
+        assertEq(room.currentPlayerIndex(), 1, "Player 2 should be the current player");
+
         // player 2 should submit their decryption values for player 1's cards
         vm.startPrank(player2);
         cardIndexes[0] = 0;
@@ -375,33 +419,200 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.stopPrank();
         console.log("Player 2 submitted decryption values");
 
+        // Verify that the game state is now in the preflop phase, stage 3
+        TexasHoldemRoom.GameStage stage4 = room.stage();
+        assertEq(
+            uint256(stage4), uint256(TexasHoldemRoom.GameStage.Preflop), "Preflop stage not reached"
+        );
         console.log("Preflop stage reached");
         // the first active player LEFT of the dealer starts all betting stages
-
+        assertEq(room.currentPlayerIndex(), 1, "Starting PreFlop: Current player index is not 1");
+        assertEq(room.lastRaiseIndex(), 1, "Starting PreFlop: Last raise index is not 1");
         // TODO: verify that each player can decrypt their cards
 
         // Start preflop betting player 2 (left of the dealer)
         // player 2 should submit their action
-        // test that player 1 cannot submit an action too
+        // test that player 1 cannot submit an action too early
         vm.startPrank(player1);
         vm.expectRevert("Not your turn");
-        room.submitAction(TexasHoldemRoom.Action.Check, 0);
+        room.submitAction(TexasHoldemRoom.Action.Fold, 0); // fails
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 1);
+        assertEq(room.lastRaiseIndex(), 1, "Starting PreFlop: Last raise index is not 1");
+        TexasHoldemRoom.Player memory player1_seeIfFolded = room.getPlayers()[0];
+        assertEq(player1_seeIfFolded.hasFolded, false, "Player 1 should not have folded yet");
+        // player 2 should submit their action
+        console.log("Player 2 submitting fold action");
+        vm.startPrank(player2);
+        room.submitAction(TexasHoldemRoom.Action.Fold, 0);
+        vm.stopPrank();
+        console.log("Player 2 submitted fold action");
+        // A new round should start now
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Shuffle));
+
+        // now player 1 should be able to submit an action
+        assertEq(room.currentPlayerIndex(), 1);
+    }
+
+    // For one player submit: (gas: 3,486,222) to save state (and emit event)
+    // For one play submit: (gas: 768,315) to just emit event
+    function test_NoShuffle2PlayersFoldAfterRiver() public {
+        console.log("test_NoShuffle2PlayersFoldAfterRiver");
+        console.log("encryptedDeck1bytes.length");
+        console.log(encryptedDeck1bytes.length);
+        console.log("encryptedDeck2bytes.length");
+        console.log(encryptedDeck2bytes.length);
+        // Test joining with player1
+        vm.startPrank(player1);
+        room.joinGame();
+        vm.stopPrank();
+        // Test joining with player2
+        vm.startPrank(player2);
+        room.joinGame();
+        vm.stopPrank();
+
+        // Verify that the game state is now in the shuffle phase
+        TexasHoldemRoom.GameStage stage2 = room.stage();
+        assertEq(uint256(stage2), uint256(TexasHoldemRoom.GameStage.Shuffle));
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 0);
+        uint8[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
+        assertEq(playerCardIndexes[0], 0);
+        assertEq(playerCardIndexes[1], 2);
+        playerCardIndexes = room.getPlayersCardIndexes(1);
+        assertEq(playerCardIndexes[0], 1);
+        assertEq(playerCardIndexes[1], 3);
+        // The Dealer should be player1
+        // and player1 should submit their encrypted shuffle first
+        vm.startPrank(player1);
+        bytes[] memory encryptedShuffleBytes = new bytes[](52);
+        for (uint256 i = 0; i < 52; i++) {
+            encryptedShuffleBytes[i] = encryptedDeck1bytes[i];
+        }
+
+        deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
+        vm.stopPrank();
+
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 1);
+
+        // TODO: encryptions should be calculated from player1's encrypted shuffle
+        // player2 should submit their encrypted shuffle next
+        vm.startPrank(player2);
+        for (uint256 i = 0; i < 52; i++) {
+            encryptedShuffleBytes[i] = encryptedDeck2bytes[i];
+        }
+
+        deckHandler.submitEncryptedShuffle(encryptedShuffleBytes);
+        // room.submitEncryptedShuffle(encryptedShuffle);
+        vm.stopPrank();
+
+        // Verify that the game state is now in the deal phase
+        TexasHoldemRoom.GameStage stage3 = room.stage();
+        assertEq(uint256(stage3), uint256(TexasHoldemRoom.GameStage.RevealDeal));
+        assertEq(room.dealerPosition(), 0);
+        assertEq(room.currentPlayerIndex(), 0);
+
+        // player 1 should submit their decryption values for player 2's cards
+        vm.startPrank(player1);
+        // the encrypted values submitted are not correct at the moment
+        // submit card index and decrypted value for each card
+        // card 0 to p1, card 1 to p2, card 2 to p1, card 3 to p2!
+        uint8[] memory cardIndexes = new uint8[](2);
+        cardIndexes[0] = 1;
+        cardIndexes[1] = 3;
+        BigNumber[] memory decryptionValues = new BigNumber[](2);
+        decryptionValues[0] = BigNumbers.init(
+            hex"ba1b5d4609942596f4fdf9ae1c765c3ff64c685bd769891bfc911d58e0b33fe3e819cea344166c37fcfb83e1d0c123687ca0d6832bd74e1f18c74ee1cf37316701c1a4c4ffc4b6cbd71dfe0540d0b48261c2d7d40264b055cd488dfacbc86efc283968a1b635c08238091ef44b8119d7b569ac084285ebc378bed8a83f0093f91a9400ac3df777f7c0677eb7775094f306c28d4603663edfa6bcfd467f41dd2bdbf2d30c64d2cec8ec5077bd7f46f3c6f60f8f5653aa110e26a48036ec9038d9532e74a47015539fac116cdc1dfa48fbe9e4498701a819ec82c13394053097e59f1343f6652576729fdf7ed696069f1fe7a3b526321b6e4c27301d78966802d2",
+            false
+        );
+        decryptionValues[1] = BigNumbers.init(
+            hex"63a98ae06802aef6037fe7cd405f2858fbfc338529081667ce03e7c1db99a906831bc5484b499ae9bfa6aab927a63d301f419c5b5fa0e511277143d24f9e5b034cf96e128e753d6c1e3c775c977d0ab18e9f1ba62debc3953ef82892ce0cd721fc27068aac0fd6dcf4f39ace0c07821e343a92b10856d91807633112793a003fe8bccc0d1bf6f07053496c80e07fd1769812f8a9695816924a4cc31f497c10f32d310b48dc50809e7c83832b156d0f06bc4deae3aeccb71559904deb23efb0b74c1ab61d9064742cb390aea940a8e139e4e90572e349c8533140d5dc3707c4a22d265aa580d0c1baa8d4e3bc2fb57f30325bbc7ea864f581819a919cdb3d3c68",
+            false
+        );
+        bytes[] memory decryptionValuesBytes = new bytes[](2);
+        decryptionValuesBytes[0] = decryptionValues[0].val;
+        decryptionValuesBytes[1] = decryptionValues[1].val;
+        deckHandler.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
+        vm.stopPrank();
+        console.log("Player 1 submitted decryption values");
+
+        assertEq(room.currentPlayerIndex(), 1, "Player 2 should be the current player");
+
+        // player 2 should submit their decryption values for player 1's cards
+        vm.startPrank(player2);
+        cardIndexes[0] = 0;
+        cardIndexes[1] = 2;
+        decryptionValues[0] = BigNumbers.init(
+            hex"340a79a7397edd9e742a38ea5a757eab9a40ad888f9f1e3bcccf64fa26306e4577863ae74af8792802dbb953427febc5fa92dfd0ccf47e532457f18488d99cf9b6ad58d8e9c76e18a565fea51b1f057ec3d164391f9de1b2774a2c2dbdf0a95662333d1ba60ccab260461e197cb546443d0a805c3c41dfa919b54a0fe48d08f0057f8433ea5a39878990b7bde94581ac3bdf2762d4fc082e2eddb4c731819f7206c4b065092e871a5a6e43bd14c965ee4fa517ee5124bb08ef2b63fb82b601ad5655de6edfc6aa7b8b02499e08f5ee2fc40637433e636b5283809e94a4e2c990422c568525dfa1fbc983f5208f892418a6bf0cccb71bcb4a547c77b79b629b5a",
+            false
+        );
+        decryptionValues[1] = BigNumbers.init(
+            hex"a0e03eb8dbe426da4cc7ebb7ac260a336800b32860a1762ac66e545d76c85d635d5b6220dc0afed7fa2e64940b30424ab381c92f15ac4a374498354288dfa145d4e7bd7a366723a1762c9f87fa925a8c4719e447863118b12becff513632d25d1ee2375032b155a98260ae61d5b1767c5e111b0236ce6eff3647b672d151ce3c5abfc7cc9fec696d85c00496e7226825dfc8052b39cabb83fca581b3611e933a493b08d703248b6909229cc594cb0984f791d09be8bafb7263895a1890bf17ad8370ceb08874fec23172d8ddd658b12da298b60a3a075cf4bae2e4d6e9fb9b95b241b8e013dc8a9b105659e17fec5d0b0bf6bdfaf884e56e82ac5209ec86b728",
+            false
+        );
+        decryptionValuesBytes[0] = decryptionValues[0].val;
+        decryptionValuesBytes[1] = decryptionValues[1].val;
+        deckHandler.submitDecryptionValues(cardIndexes, decryptionValuesBytes);
+        vm.stopPrank();
+        console.log("Player 2 submitted decryption values");
+
+        // Verify that the game state is now in the preflop phase, stage 3
+        TexasHoldemRoom.GameStage stage4 = room.stage();
+        assertEq(
+            uint256(stage4), uint256(TexasHoldemRoom.GameStage.Preflop), "Preflop stage not reached"
+        );
+        console.log("Preflop stage reached");
+        // the first active player LEFT of the dealer starts all betting stages
+        assertEq(room.currentPlayerIndex(), 1, "Starting PreFlop: Current player index is not 1");
+        assertEq(room.lastRaiseIndex(), 1, "Starting PreFlop: Last raise index is not 1");
+        // TODO: verify that each player can decrypt their cards
+
+        // Start preflop betting player 2 (left of the dealer)
+        // player 2 should submit their action
+        // test that player 1 cannot submit an action too early
+        vm.startPrank(player1);
+        vm.expectRevert("Not your turn");
+        room.submitAction(TexasHoldemRoom.Action.Check, 0); // fails
+        vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 1);
+        assertEq(room.lastRaiseIndex(), 1, "Starting PreFlop: Last raise index is not 1");
         TexasHoldemRoom.Player memory player1_seeIfChecked = room.getPlayers()[0];
+        assertEq(player1_seeIfChecked.hasChecked, false, "Player 1 should not have checked yet");
         // player 2 should submit their action
         console.log("Player 2 submitting check action");
         vm.startPrank(player2);
         room.submitAction(TexasHoldemRoom.Action.Check, 0);
         vm.stopPrank();
+        console.log("Player 2 submitted check action");
+        // A new round should start now
+        // assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Shuffle));
 
         // now player 1 should be able to submit an action
+        assertEq(room.currentPlayerIndex(), 0);
 
         console.log("Player 1 submitting check action");
         vm.startPrank(player1);
         room.submitAction(TexasHoldemRoom.Action.Check, 0);
         vm.stopPrank();
 
+        // We should be in the reveal flop phase now
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealFlop));
+        // The dealer starts all reveal stages
+        assertEq(room.currentPlayerIndex(), 0);
         console.log("Reveal flop stage reached");
+        player1_seeIfChecked = room.getPlayers()[0];
+        TexasHoldemRoom.Player memory player2_seeIfChecked = room.getPlayers()[1];
+        assertEq(
+            player1_seeIfChecked.hasChecked,
+            false,
+            "Player 1 should not have checked yet (reset at end of betting stage)"
+        );
+        assertEq(
+            player2_seeIfChecked.hasChecked,
+            false,
+            "Player 2 should not have checked yet (reset at end of betting stage)"
+        );
 
         // All players should submit their decryption values for the flop cards
         uint8[] memory cardIndexesFlop = new uint8[](3);
@@ -445,30 +656,75 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         decryptionValuesBytesFlop[1] = decryptionValuesFlop[1].val;
         decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
 
+        // assert that none of the community cards are not set yet
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "");
+        // assertEq(room.communityCards(2), "");
+        // assertEq(room.communityCards(1), "");
+        // assertEq(room.communityCards(0), "");
+
         vm.expectEmit();
         emit DeckHandler.FlopRevealed(player2, "5", "6", "7");
         deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
-
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "");
+        // assertEq(room.communityCards(2), "7");
+        // assertEq(room.communityCards(1), "6");
+        // assertEq(room.communityCards(0), "5");
         vm.stopPrank();
+
+        // We should be in the flop phase now
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Flop));
+        assertEq(room.currentPlayerIndex(), 1);
+        assertEq(room.lastRaiseIndex(), 1);
+        assertEq(room.dealerPosition(), 0);
+        assertEq(
+            player1_seeIfChecked.hasChecked,
+            false,
+            "Player 1 should not have checked yet (should be reset at start of betting stage)"
+        );
+        assertEq(
+            player2_seeIfChecked.hasChecked,
+            false,
+            "Player 2 should not have checked yet (should be reset at start of betting stage)"
+        );
 
         // test betting stage, player 2 checks, player 1 raises, player 2 raises, player 1 calls
         vm.startPrank(player2);
         room.submitAction(TexasHoldemRoom.Action.Check, 0);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0);
+        assertEq(room.lastRaiseIndex(), 1);
+        assertEq(room.currentStageBet(), 0);
+        assertEq(room.pot(), 0);
 
         vm.startPrank(player1);
         room.submitAction(TexasHoldemRoom.Action.Raise, 10);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 1);
+        assertEq(room.lastRaiseIndex(), 0); // p1 raised!
+        assertEq(room.currentStageBet(), 10);
+        assertEq(room.pot(), 10);
 
         vm.startPrank(player2);
         vm.expectRevert("Raise must be higher than current bet");
         room.submitAction(TexasHoldemRoom.Action.Raise, 10);
         room.submitAction(TexasHoldemRoom.Action.Raise, 100);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0);
+        assertEq(room.lastRaiseIndex(), 1); // p2 raised!
+        assertEq(room.currentStageBet(), 100); // per player (to stay in the round)
+        assertEq(room.pot(), 110); // total pot
 
         vm.startPrank(player1);
         room.submitAction(TexasHoldemRoom.Action.Call, 0);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0); // End of betting stage, start of reveal stage
+        assertEq(room.lastRaiseIndex(), 1);
+        assertEq(room.currentStageBet(), 0);
+        assertEq(room.pot(), 200);
+
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealTurn));
 
         // All players should submit their decryption values for the turn card
         uint8[] memory cardIndexesTurn = new uint8[](1);
@@ -486,6 +742,7 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
+        assertEq(room.currentPlayerIndex(), 1);
         vm.startPrank(player2);
         cardIndexesTurn[0] = 9;
         decryptionValuesTurn[0] = BigNumbers.init(hex"39", false);
@@ -493,6 +750,11 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.expectEmit();
         emit DeckHandler.TurnRevealed(player2, "9");
         deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
+        // assertEq(room.communityCards(4), "");
+        // assertEq(room.communityCards(3), "9");
+        // assertEq(room.communityCards(2), "7");
+        // assertEq(room.communityCards(1), "6");
+        // assertEq(room.communityCards(0), "5");
         vm.stopPrank();
 
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Turn));
@@ -501,10 +763,19 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.startPrank(player2);
         room.submitAction(TexasHoldemRoom.Action.Raise, 100);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0);
+        assertEq(room.lastRaiseIndex(), 1);
+        assertEq(room.currentStageBet(), 100);
+        assertEq(room.pot(), 300);
 
         vm.startPrank(player1);
         room.submitAction(TexasHoldemRoom.Action.Call, 0);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0);
+        assertEq(room.currentStageBet(), 0);
+        assertEq(room.pot(), 400);
+
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealRiver));
 
         // All players should submit their decryption values for the river card
         uint8[] memory cardIndexesRiver = new uint8[](1);
@@ -522,6 +793,7 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 
+        assertEq(room.currentPlayerIndex(), 1);
         vm.startPrank(player2);
         cardIndexesRiver[0] = 11;
         decryptionValuesRiver[0] = BigNumbers.init(hex"3131", false);
@@ -529,157 +801,43 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         vm.expectEmit();
         emit DeckHandler.RiverRevealed(player2, "11");
         deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
+        // assertEq(room.communityCards(4), "11");
+        // assertEq(room.communityCards(3), "9");
+        // assertEq(room.communityCards(2), "7");
+        // assertEq(room.communityCards(1), "6");
+        // assertEq(room.communityCards(0), "5");
         vm.stopPrank();
+
+        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.River));
+        assertEq(room.currentPlayerIndex(), 1);
 
         vm.startPrank(player2);
         room.submitAction(TexasHoldemRoom.Action.Check, 0);
         vm.stopPrank();
+        assertEq(room.currentPlayerIndex(), 0);
+        assertEq(room.lastRaiseIndex(), 1);
+        assertEq(room.currentStageBet(), 0);
+        assertEq(room.pot(), 400);
 
+        // PLAYER 1 FOLDS, PLAYER 2 WINS THE POT
         vm.startPrank(player1);
-        room.submitAction(TexasHoldemRoom.Action.Check, 0);
-        vm.stopPrank();
-        // reveal cards?
-        // submit private key r's and mid func calcs. verify cards. compare hands
-        console.log("Player1 is revealing their cards");
-
-        vm.startPrank(player1);
-        vm.expectEmit(address(deckHandler));
-        emit DeckHandler.PlayerCardsRevealed(
-            address(player1), "0", "2", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
-        );
-        (string memory card1, string memory card2) =
-            deckHandler.revealMyCards(c1p1.val, privateKey1.val, c1Inverse1.val);
-        vm.stopPrank();
-
-        console.log("Player2 is revealing their cards");
-
-        vm.startPrank(player2);
-
-        vm.expectEmit(address(deckHandler));
-        emit DeckHandler.PlayerCardsRevealed(
-            address(player2), "1", "3", PokerHandEvaluatorv2.HandRank.Flush, 600001311090807
-        );
         // also expect a winner event to be emitted
         vm.expectEmit(address(room));
-        uint8[] memory winnerPlayerIndexes = new uint8[](2);
-        winnerPlayerIndexes[0] = 0;
-        winnerPlayerIndexes[1] = 1;
-        address[] memory winnerAddresses = new address[](2);
-        winnerAddresses[0] = address(player1);
-        winnerAddresses[1] = address(player2);
-        emit TexasHoldemRoom.PotWon(winnerAddresses, winnerPlayerIndexes, 200);
-
-        (string memory card3, string memory card4) =
-            deckHandler.revealMyCards(c1p2.val, privateKey2.val, c1Inverse2.val);
+        uint8[] memory winnerPlayerIndexes = new uint8[](1);
+        winnerPlayerIndexes[0] = 1;
+        address[] memory winnerAddresses = new address[](1);
+        winnerAddresses[0] = address(player2);
+        emit TexasHoldemRoom.PotWon(winnerAddresses, winnerPlayerIndexes, 400);
+        room.submitAction(TexasHoldemRoom.Action.Fold, 0); // ==== FOLD HERE! ====
         vm.stopPrank();
-        // todo: check cards exactly match an unshuffled deck's cards
 
-        // ----- ROUND 2 -----
-        // room should be in shuffle stage now
-        TexasHoldemRoom.Player[] memory players = room.getPlayers();
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Shuffle));
-        // the players bets should be reset and each player should have received half the pot
-        //(back to starting amount)
-        players = room.getPlayers();
-        for (uint8 i = 0; i < room.numPlayers(); i++) {
-            assertEq(players[i].currentStageBet, 0);
-            assertEq(players[i].totalRoundBet, 0);
-            assertEq(players[i].chips, 1000);
-        }
-        assertEq(room.currentStageBet(), 0);
-        assertEq(room.pot(), 0);
-        // player at index 0 was dealer last round, so dealer position is now 1
         assertEq(room.currentPlayerIndex(), 1);
-        // assertEq(room.lastRaiseIndex(), 0);
-        assertEq(room.dealerPosition(), 1);
 
-        // TODO: These are the incorrect encrypted bytes for the player. Right now we are testing
-        // to see if the currentPlayerIndex is set correctly for the first couple stages.
-
-        vm.startPrank(player2);
-        bytes[] memory encryptedShuffleBytesx = new bytes[](52);
-        for (uint256 i = 0; i < 52; i++) {
-            encryptedShuffleBytesx[i] = encryptedDeck1bytes[i];
-        }
-        deckHandler.submitEncryptedShuffle(encryptedShuffleBytesx);
-        vm.stopPrank();
-
-        assertEq(room.currentPlayerIndex(), 0);
-
-        // TODO: encryptions should be calculated from player1's encrypted shuffle
-        // player2 should submit their encrypted shuffle next
-        vm.startPrank(player1);
-        deckHandler.submitEncryptedShuffle(encryptedShuffleBytesx);
-        vm.stopPrank();
-
-        // The dealer is always the first player to submit decryption values
-        assertEq(room.currentPlayerIndex(), 1);
-        assertEq(room.dealerPosition(), 1);
-        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealDeal));
-
-        // player 2 should submit their decryption values for player 1's cards
-        vm.startPrank(player2);
-        uint8[] memory cardIndexesR2 = new uint8[](2);
-        cardIndexesR2[0] = 0;
-        cardIndexesR2[1] = 2;
-        BigNumber[] memory decryptionValuesR2 = new BigNumber[](2);
-        decryptionValuesR2[0] = BigNumbers.init(
-            hex"340a79a7397edd9e742a38ea5a757eab9a40ad888f9f1e3bcccf64fa26306e4577863ae74af8792802dbb953427febc5fa92dfd0ccf47e532457f18488d99cf9b6ad58d8e9c76e18a565fea51b1f057ec3d164391f9de1b2774a2c2dbdf0a95662333d1ba60ccab260461e197cb546443d0a805c3c41dfa919b54a0fe48d08f0057f8433ea5a39878990b7bde94581ac3bdf2762d4fc082e2eddb4c731819f7206c4b065092e871a5a6e43bd14c965ee4fa517ee5124bb08ef2b63fb82b601ad5655de6edfc6aa7b8b02499e08f5ee2fc40637433e636b5283809e94a4e2c990422c568525dfa1fbc983f5208f892418a6bf0cccb71bcb4a547c77b79b629b5a",
-            false
-        );
-        decryptionValuesR2[1] = BigNumbers.init(
-            hex"a0e03eb8dbe426da4cc7ebb7ac260a336800b32860a1762ac66e545d76c85d635d5b6220dc0afed7fa2e64940b30424ab381c92f15ac4a374498354288dfa145d4e7bd7a366723a1762c9f87fa925a8c4719e447863118b12becff513632d25d1ee2375032b155a98260ae61d5b1767c5e111b0236ce6eff3647b672d151ce3c5abfc7cc9fec696d85c00496e7226825dfc8052b39cabb83fca581b3611e933a493b08d703248b6909229cc594cb0984f791d09be8bafb7263895a1890bf17ad8370ceb08874fec23172d8ddd658b12da298b60a3a075cf4bae2e4d6e9fb9b95b241b8e013dc8a9b105659e17fec5d0b0bf6bdfaf884e56e82ac5209ec86b728",
-            false
-        );
-        bytes[] memory decryptionValuesBytesR2 = new bytes[](2);
-        decryptionValuesBytesR2[0] = decryptionValuesR2[0].val;
-        decryptionValuesBytesR2[1] = decryptionValuesR2[1].val;
-        deckHandler.submitDecryptionValues(cardIndexesR2, decryptionValuesBytesR2);
-        vm.stopPrank();
-        console.log("Player 2 submitted decryption values");
-
-        assertEq(room.currentPlayerIndex(), 0);
-
-        // player 1 should submit their decryption values for player 2's cards
-        vm.startPrank(player1);
-        // the encrypted values submitted are not correct at the moment
-        // submit card index and decrypted value for each card
-        // card 0 to p1, card 1 to p2, card 2 to p1, card 3 to p2!
-        cardIndexesR2[0] = 1;
-        cardIndexesR2[1] = 3;
-        decryptionValuesR2[0] = BigNumbers.init(
-            hex"ba1b5d4609942596f4fdf9ae1c765c3ff64c685bd769891bfc911d58e0b33fe3e819cea344166c37fcfb83e1d0c123687ca0d6832bd74e1f18c74ee1cf37316701c1a4c4ffc4b6cbd71dfe0540d0b48261c2d7d40264b055cd488dfacbc86efc283968a1b635c08238091ef44b8119d7b569ac084285ebc378bed8a83f0093f91a9400ac3df777f7c0677eb7775094f306c28d4603663edfa6bcfd467f41dd2bdbf2d30c64d2cec8ec5077bd7f46f3c6f60f8f5653aa110e26a48036ec9038d9532e74a47015539fac116cdc1dfa48fbe9e4498701a819ec82c13394053097e59f1343f6652576729fdf7ed696069f1fe7a3b526321b6e4c27301d78966802d2",
-            false
-        );
-        decryptionValuesR2[1] = BigNumbers.init(
-            hex"63a98ae06802aef6037fe7cd405f2858fbfc338529081667ce03e7c1db99a906831bc5484b499ae9bfa6aab927a63d301f419c5b5fa0e511277143d24f9e5b034cf96e128e753d6c1e3c775c977d0ab18e9f1ba62debc3953ef82892ce0cd721fc27068aac0fd6dcf4f39ace0c07821e343a92b10856d91807633112793a003fe8bccc0d1bf6f07053496c80e07fd1769812f8a9695816924a4cc31f497c10f32d310b48dc50809e7c83832b156d0f06bc4deae3aeccb71559904deb23efb0b74c1ab61d9064742cb390aea940a8e139e4e90572e349c8533140d5dc3707c4a22d265aa580d0c1baa8d4e3bc2fb57f30325bbc7ea864f581819a919cdb3d3c68",
-            false
-        );
-        decryptionValuesBytesR2[0] = decryptionValuesR2[0].val;
-        decryptionValuesBytesR2[1] = decryptionValuesR2[1].val;
-        deckHandler.submitDecryptionValues(cardIndexesR2, decryptionValuesBytesR2);
-        vm.stopPrank();
-        console.log("Player 1 submitted decryption values");
-
-        assertEq(room.currentPlayerIndex(), 0);
-        assertEq(room.dealerPosition(), 1);
-        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.Preflop));
-
-        vm.startPrank(player1);
-        room.submitAction(TexasHoldemRoom.Action.Check, 0);
-        vm.stopPrank();
-
-        assertEq(room.currentPlayerIndex(), 1);
-        assertEq(room.dealerPosition(), 1);
-
-        console.log("Player 2 submitting check action");
-        vm.startPrank(player2);
-        room.submitAction(TexasHoldemRoom.Action.Check, 0);
-        vm.stopPrank();
-
-        assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealFlop));
-        // dealer action again - reveal stage dealer goes first
-        assertEq(room.currentPlayerIndex(), 1);
-        assertEq(room.dealerPosition(), 1);
+        // ensure handscores are 0 after a player folds (no cards to reveal) and should be reset to 0
+        // for new rounds
+        TexasHoldemRoom.Player[] memory players = room.getPlayers();
+        vm.assertEq(players[0].handScore, 0);
+        vm.assertEq(players[1].handScore, 0);
     }
 }
