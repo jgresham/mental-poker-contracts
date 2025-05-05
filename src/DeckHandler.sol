@@ -40,7 +40,7 @@ contract DeckHandler {
         cryptoUtils = CryptoUtils(_cryptoUtils);
         handEvaluator = PokerHandEvaluatorv2(_handEvaluator);
         for (uint256 i = 0; i < 52; i++) {
-            encryptedDeck.push(BigNumber({ val: "0", neg: false, bitlen: 2048 }));
+            encryptedDeck.push(BigNumber({ val: "0", neg: false, bitlen: 256 }));
         }
     }
 
@@ -48,7 +48,7 @@ contract DeckHandler {
     function resetDeck() external {
         require(msg.sender == address(texasHoldemRoom), "Only the room contract can reset the deck");
         for (uint8 i = 0; i < 52; i++) {
-            encryptedDeck[i] = BigNumber({ val: "0", neg: false, bitlen: 2048 });
+            encryptedDeck[i] = BigNumber({ val: "0", neg: false, bitlen: 256 });
         }
         communityCards = ["", "", "", "", ""];
     }
@@ -156,8 +156,11 @@ contract DeckHandler {
         // scope block to reduce number of variables in memory (evm stack depth limited to 16 variables)
         {
             uint8[2] memory playerCardIndexes = texasHoldemRoom.getPlayersCardIndexes(playerIndex);
-            BigNumber memory privateKeyBN = BigNumbers.init(privateKey, false, 2048);
-            BigNumber memory c1BN = BigNumbers.init(c1, false, 2048);
+            // BigNumber memory privateKeyBN = BigNumbers.init(privateKey, false, 2048);
+            // BigNumber memory privateKeyBN = BigNumber({ val: privateKey, neg: false, bitlen: 256 });
+            // BigNumber memory c1BN = BigNumber({ val: c1, neg: false, bitlen: 256 });
+            BigNumber memory privateKeyBN = BigNumbers.init(privateKey, false, 256);
+            BigNumber memory c1BN = BigNumbers.init(c1, false, 256);
             BigNumber memory encryptedCard1BN = encryptedDeck[playerCardIndexes[0]];
             BigNumber memory encryptedCard2BN = encryptedDeck[playerCardIndexes[1]];
             CryptoUtils.EncryptedCard memory encryptedCard1Struct =
@@ -165,7 +168,7 @@ contract DeckHandler {
             CryptoUtils.EncryptedCard memory encryptedCard2Struct =
                 CryptoUtils.EncryptedCard({ c1: c1BN, c2: encryptedCard2BN });
             BigNumber memory c1InversePowPrivateKeyBN =
-                BigNumbers.init(c1InversePowPrivateKey, false, 2048);
+                BigNumbers.init(c1InversePowPrivateKey, false, 256);
             BigNumber memory decryptedCard1 = cryptoUtils.verifyDecryptCard(
                 encryptedCard1Struct, privateKeyBN, c1InversePowPrivateKeyBN
             );
