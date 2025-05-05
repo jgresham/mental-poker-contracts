@@ -662,14 +662,16 @@ contract TexasHoldemRoom {
 
     function getPlayersCardIndexes(uint8 playerIndex)
         external
+        view
         returns (uint8[2] memory playerCardIndexes)
     {
         // emit THP_Log("_progressGame() in getPlayersCardIndexes()");
         uint8 countOfPlayersCounterClockwiseToDealer = 0;
-        uint8 playerSeatPosition = players[playerIndex].seatPosition;
-        uint8 dealerSeatPosition = players[dealerPosition].seatPosition;
+        uint8 playerSeatPosition = players[playerIndex].seatPosition; // 0
+        uint8 dealerSeatPosition = players[dealerPosition].seatPosition; // 1
         while (playerSeatPosition != dealerSeatPosition) {
-            playerSeatPosition = (playerSeatPosition - 1 + MAX_PLAYERS) % MAX_PLAYERS;
+            // 0 != 1
+            playerSeatPosition = (playerSeatPosition + (MAX_PLAYERS - 1)) % MAX_PLAYERS; // = (0 - 1 + 10) % 10 = 9
             if (
                 seatPositionToPlayerIndex[playerSeatPosition] != EMPTY_SEAT
                     && !players[seatPositionToPlayerIndex[playerSeatPosition]].joinedAndWaitingForNextRound
