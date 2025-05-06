@@ -329,7 +329,8 @@ contract TexasHoldemRoom {
 
         if (numPlayers < MIN_PLAYERS) {
             // not enough players to start the round
-            stage = GameStage.Idle;
+            // already in idle stage with pot = 0
+            lastActionTimestamp = 0; // turns the clock "off"
             dealerPosition = 0;
             currentPlayerIndex = 0;
             return;
@@ -461,18 +462,22 @@ contract TexasHoldemRoom {
         // todo: what to do with the remainder fractional chips?
         // use 6th or 7th card to decide who gets the "odd chip" (remainder)
         uint256 winAmount = pot / winnerCount;
+        uint8[] memory justWinnerIndicies = new uint8[](winnerCount);
         for (uint8 i = 0; i < winnerCount; i++) {
             uint8 winnerPlayerIndex = winnerPlayerIndexes[i];
+            justWinnerIndicies[i] = winnerPlayerIndex;
             players[winnerPlayerIndex].chips += winAmount;
         }
         // emit THP_Log("_progressGame() dw after chips split");
 
-        address[] memory winnerAddrs = new address[](winnerPlayerIndexes.length);
+        // address[] memory winnerAddrs = new address[](winnerPlayerIndexes.length);
+        // ^ previous left 0x00 addresses
+        address[] memory winnerAddrs = new address[](winnerCount);
         for (uint8 i = 0; i < winnerCount; i++) {
-            winnerAddrs[i] = players[winnerPlayerIndexes[i]].addr;
+            winnerAddrs[i] = players[justWinnerIndicies[i]].addr;
         }
         // emit THP_Log("_progressGame() dw after winnerAddrs");
-        emit PotWon(winnerAddrs, winnerPlayerIndexes, winAmount);
+        emit PotWon(winnerAddrs, justWinnerIndicies, winAmount);
     }
 
     function _placeBet(uint8 playerIndex, uint256 amount) internal {
@@ -509,23 +514,19 @@ contract TexasHoldemRoom {
         _progressGame();
     }
 
-    function reportIdlePlayer(uint8 playerIndex) external {
+    function reportIdlePlayer() external {
         // require(!isPrivate, "Cannot report idle player in private game");
         uint256 timeElapsed = block.timestamp - lastActionTimestamp;
         require(timeElapsed > 30 seconds, "Player has 30 seconds to act");
         // check if it is the reported player's turn to act or if the player has already revealed their cards
-        bool isPlayerTurn = playerIndex == currentPlayerIndex;
-        bool hasPlayerRevealedCards = players[playerIndex].handScore > 0;
+        bool hasPlayerRevealedCards = players[currentPlayerIndex].handScore > 0;
         if (stage == GameStage.Showdown) {
             // revert only if the player has already revealed their cards
             require(!hasPlayerRevealedCards, "Player has already revealed their cards");
-        } else {
-            // revert only if it is not the reported player's turn to act
-            require(isPlayerTurn, "Not the reported player's turn");
         }
-        emit IdlePlayerKicked(msg.sender, players[playerIndex].addr, timeElapsed);
+        emit IdlePlayerKicked(msg.sender, players[currentPlayerIndex].addr, timeElapsed);
         // todo: split the kicked player's chips between the other active players
-        players[playerIndex].leavingAfterRoundEnds = true;
+        players[currentPlayerIndex].leavingAfterRoundEnds = true;
         // same logic as: this.resetRound();
         // returns chips to players and starts a new round
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {

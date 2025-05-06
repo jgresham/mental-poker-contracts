@@ -583,7 +583,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         // assertEq(room.communityCards(0), "");
 
         vm.expectEmit();
-        emit DeckHandler.FlopRevealed(player2, "38", "34", "45");
+        emit DeckHandler.FlopRevealed("38", "34", "45");
         deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
         // assertEq(room.communityCards(4), "");
         // assertEq(room.communityCards(3), "");
@@ -658,7 +658,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         );
         decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
         vm.expectEmit();
-        emit DeckHandler.TurnRevealed(player2, "36");
+        emit DeckHandler.TurnRevealed("36");
         deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         // assertEq(room.communityCards(4), "");
         // assertEq(room.communityCards(3), "49");
@@ -710,7 +710,7 @@ contract TexasHoldemRoomRealKeysShuffledOnceTest is Test {
         );
         decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
         vm.expectEmit();
-        emit DeckHandler.RiverRevealed(player2, "30");
+        emit DeckHandler.RiverRevealed("30");
         deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         // assertEq(room.communityCards(4), "34");
         // assertEq(room.communityCards(3), "49");

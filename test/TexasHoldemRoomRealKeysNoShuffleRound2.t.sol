@@ -446,7 +446,7 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         decryptionValuesBytesFlop[2] = decryptionValuesFlop[2].val;
 
         vm.expectEmit();
-        emit DeckHandler.FlopRevealed(player2, "5", "6", "7");
+        emit DeckHandler.FlopRevealed("5", "6", "7");
         deckHandler.submitDecryptionValues(cardIndexesFlop, decryptionValuesBytesFlop);
 
         vm.stopPrank();
@@ -491,7 +491,7 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         decryptionValuesTurn[0] = BigNumbers.init(hex"39", false);
         decryptionValuesBytesTurn[0] = decryptionValuesTurn[0].val;
         vm.expectEmit();
-        emit DeckHandler.TurnRevealed(player2, "9");
+        emit DeckHandler.TurnRevealed("9");
         deckHandler.submitDecryptionValues(cardIndexesTurn, decryptionValuesBytesTurn);
         vm.stopPrank();
 
@@ -527,7 +527,7 @@ contract TexasHoldemRoomRealKeysNoShuffleRound2Test is Test {
         decryptionValuesRiver[0] = BigNumbers.init(hex"3131", false);
         decryptionValuesBytesRiver[0] = decryptionValuesRiver[0].val;
         vm.expectEmit();
-        emit DeckHandler.RiverRevealed(player2, "11");
+        emit DeckHandler.RiverRevealed("11");
         deckHandler.submitDecryptionValues(cardIndexesRiver, decryptionValuesBytesRiver);
         vm.stopPrank();
 

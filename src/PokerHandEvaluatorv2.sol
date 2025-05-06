@@ -210,6 +210,7 @@ contract PokerHandEvaluatorv2 {
         return findBestHand(cardArray);
     }
 
+    // For test cases to use human readable strings
     function findBestHandExternal2(string[7] memory cards) public pure returns (Hand memory) {
         Card[7] memory cardArray;
         for (uint256 i = 0; i < 7; i++) {
@@ -218,6 +219,7 @@ contract PokerHandEvaluatorv2 {
         return findBestHand(cardArray);
     }
 
+    // TODO(medium): have this return the indicies for the best hand (5 card indicies)
     function findBestHand(Card[7] memory cards) internal pure returns (Hand memory) {
         // Sort cards by rank (ascending order)
         // Example: [2♥, 3♠, 5♦, 8♣, 10♥, J♦, A♠]
@@ -231,6 +233,7 @@ contract PokerHandEvaluatorv2 {
                 }
             }
         }
+        // emit PHE_Log("after card creation loop ");
 
         // Check for each hand type from highest to lowest
         Hand memory bestHand;
@@ -244,6 +247,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after royal flush ");
 
         // Check Straight Flush
         (rank, score) = hasStraightFlush(cards);
@@ -252,7 +256,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
-
+        // emit PHE_Log("after straight flush ");
         // Check Four of a Kind
         (rank, score) = hasFourOfAKind(cards);
         if (score > 0) {
@@ -260,6 +264,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after four of a kind ");
         // Check Full House
         (rank, score) = hasFullHouse(cards);
         if (score > 0) {
@@ -267,6 +272,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after full house ");
         // Check Flush
         (rank, score) = hasFlush(cards);
         if (score > 0) {
@@ -274,6 +280,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after flush ");
         // Check Straight
         (rank, score) = hasStraight(cards);
         if (score > 0) {
@@ -281,6 +288,7 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after straight ");
         // Check Three of a Kind
         (rank, score) = hasThreeOfAKind(cards);
         if (score > 0) {
@@ -288,13 +296,17 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after three of a kind ");
         // Check Two Pair
         (rank, score) = hasTwoPair(cards);
         if (score > 0) {
             bestHand.rank = HandRank.TwoPair;
             bestHand.score = score;
+            // emit PHE_Log("has two pair! before return ");
             return bestHand;
         }
+        // emit PHE_Log("after two pair ");
+
         // Check Pair
         (rank, score) = hasPair(cards);
         if (score > 0) {
@@ -302,10 +314,12 @@ contract PokerHandEvaluatorv2 {
             bestHand.score = score;
             return bestHand;
         }
+        // emit PHE_Log("after pair ");
         // Default to high card if no other hand is found
         (rank, score) = hasHighCard(cards);
         bestHand.rank = HandRank.HighCard;
         bestHand.score = score;
+        // emit PHE_Log("after high card ");
         return bestHand;
     }
 
@@ -588,7 +602,13 @@ contract PokerHandEvaluatorv2 {
     function hasTwoPair(Card[7] memory cards) internal pure returns (uint8, uint256) {
         uint8 highPairRank = 0;
         uint8 lowPairRank = 0;
-
+        // emit PHE_Log(uintToString(cards[6].rank));
+        // emit PHE_Log(uintToString(cards[5].rank));
+        // emit PHE_Log(uintToString(cards[4].rank));
+        // emit PHE_Log(uintToString(cards[3].rank));
+        // emit PHE_Log(uintToString(cards[2].rank));
+        // emit PHE_Log(uintToString(cards[1].rank));
+        // emit PHE_Log(uintToString(cards[0].rank));
         // Find pairs
         for (uint256 i = 6; i > 0; i--) {
             if (cards[i].rank == cards[i - 1].rank) {
@@ -597,7 +617,10 @@ contract PokerHandEvaluatorv2 {
                     // if (i == 1) {
                     //     break;
                     // }
-                    i--; // Skip the second card of the pair
+                    // underflow if we subtract 1 from i twice when i == 1
+                    if (i > 1) {
+                        i--; // Skip the second card of the pair
+                    }
                 } else {
                     lowPairRank = cards[i].rank;
                     break;

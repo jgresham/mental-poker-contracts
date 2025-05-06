@@ -20,9 +20,9 @@ contract DeckHandler {
     event DecryptionValuesSubmitted(
         address indexed player, uint8[] cardIndexes, bytes[] decryptionValues
     );
-    event FlopRevealed(address indexed player, string card1, string card2, string card3);
-    event TurnRevealed(address indexed player, string card1);
-    event RiverRevealed(address indexed player, string card1);
+    event FlopRevealed(string card1, string card2, string card3);
+    event TurnRevealed(string card1);
+    event RiverRevealed(string card1);
     event PlayerRevealingCards(
         address indexed player, bytes c1, bytes privateKey, bytes c1InversePowPrivateKey
     );
@@ -70,7 +70,7 @@ contract DeckHandler {
         texasHoldemRoom.progressGame();
     }
 
-    // fully new function
+    // TODO(high): verify that the card indicies are valid for the number of players and stage
     function submitDecryptionValues(uint8[] memory cardIndexes, bytes[] memory decryptionValues)
         external
     {
@@ -90,7 +90,7 @@ contract DeckHandler {
             "Mismatch in cardIndexes and decryptionValues lengths"
         );
         // TODO: verify decryption values?
-        // TODO: verify decryption indexes
+        // TODO: verify decryption indexes?
         emit DecryptionValuesSubmitted(msg.sender, cardIndexes, decryptionValues);
 
         for (uint8 i = 0; i < cardIndexes.length; i++) {
@@ -103,22 +103,22 @@ contract DeckHandler {
         if (nextRevealPlayer == texasHoldemRoom.dealerPosition()) {
             if (stage == TexasHoldemRoom.GameStage.RevealFlop) {
                 // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[5]);
-                string memory card2 = cryptoUtils.decodeBigintMessage(encryptedDeck[6]);
-                string memory card3 = cryptoUtils.decodeBigintMessage(encryptedDeck[7]);
-                emit FlopRevealed(msg.sender, card1, card2, card3);
+                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[cardIndexes[0]]);
+                string memory card2 = cryptoUtils.decodeBigintMessage(encryptedDeck[cardIndexes[1]]);
+                string memory card3 = cryptoUtils.decodeBigintMessage(encryptedDeck[cardIndexes[2]]);
+                emit FlopRevealed(card1, card2, card3);
                 communityCards[0] = card1;
                 communityCards[1] = card2;
                 communityCards[2] = card3;
             } else if (stage == TexasHoldemRoom.GameStage.RevealTurn) {
                 // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[9]);
-                emit TurnRevealed(msg.sender, card1);
+                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[cardIndexes[0]]);
+                emit TurnRevealed(card1);
                 communityCards[3] = card1;
             } else if (stage == TexasHoldemRoom.GameStage.RevealRiver) {
                 // convert the decrypted cards to a string
-                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[11]);
-                emit RiverRevealed(msg.sender, card1);
+                string memory card1 = cryptoUtils.decodeBigintMessage(encryptedDeck[cardIndexes[0]]);
+                emit RiverRevealed(card1);
                 communityCards[4] = card1;
             }
         }
