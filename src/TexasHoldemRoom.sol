@@ -62,6 +62,7 @@ contract TexasHoldemRoom {
      */
     uint8 public currentPlayerIndex;
     uint8 public lastRaiseIndex;
+    uint256 public lastActionTimestamp;
 
     uint8 public constant MAX_PLAYERS = 10;
     uint8 public constant MIN_PLAYERS = 2;
@@ -85,6 +86,10 @@ contract TexasHoldemRoom {
         address indexed player, uint8 indexed playerIndex, uint8 indexed seatPosition
     );
     event PlayerLeft(address indexed player, uint8 indexed playerIndex, uint8 indexed seatPosition);
+    // a non-player could report an idle player
+    event IdlePlayerKicked(
+        address indexed addressReporting, address indexed playerReported, uint256 timeElapsed
+    );
     // event THP_Log(string message);
 
     constructor(address _cryptoUtils, uint256 _smallBlind, bool _isPrivate) {
@@ -288,7 +293,7 @@ contract TexasHoldemRoom {
 
         // Reset game state
         roundNumber++;
-        stage = GameStage.Shuffle;
+        stage = GameStage.Idle;
         pot = 0;
         currentStageBet = 0;
         // todo: blinds
@@ -362,7 +367,6 @@ contract TexasHoldemRoom {
         // _placeBet(sbPosition, smallBlind);
         // _placeBet(bbPosition, bigBlind);
 
-        stage = GameStage.Idle;
         _progressGame();
     }
 
@@ -505,14 +509,48 @@ contract TexasHoldemRoom {
         _progressGame();
     }
 
+    function reportIdlePlayer(uint8 playerIndex) external {
+        // require(!isPrivate, "Cannot report idle player in private game");
+        uint256 timeElapsed = block.timestamp - lastActionTimestamp;
+        require(timeElapsed > 30 seconds, "Player has 30 seconds to act");
+        // check if it is the reported player's turn to act or if the player has already revealed their cards
+        bool isPlayerTurn = playerIndex == currentPlayerIndex;
+        bool hasPlayerRevealedCards = players[playerIndex].handScore > 0;
+        if (stage == GameStage.Showdown) {
+            // revert only if the player has already revealed their cards
+            require(!hasPlayerRevealedCards, "Player has already revealed their cards");
+        } else {
+            // revert only if it is not the reported player's turn to act
+            require(isPlayerTurn, "Not the reported player's turn");
+        }
+        emit IdlePlayerKicked(msg.sender, players[playerIndex].addr, timeElapsed);
+        // todo: split the kicked player's chips between the other active players
+        players[playerIndex].leavingAfterRoundEnds = true;
+        // same logic as: this.resetRound();
+        // returns chips to players and starts a new round
+        for (uint8 i = 0; i < MAX_PLAYERS; i++) {
+            players[i].chips += players[i].totalRoundBet;
+        }
+        _startNewHand();
+    }
+
     /**
-     * @dev Increments the current player index and moves to the next stage
+     * @dev This function should be called after EVERY valid player action. It contains
+     * @dev logic to update common state like lastActionTimestamp, currentPlayerIndex, and stage.
      * @dev If in a reveal stage, all players need to submit their decryption values
      * @dev If in a betting stage, only the players who are not all-in
      * @dev and not folded need to submit their actions
      * @notice Emits a NewStage event and new current player index event
      */
     function _progressGame() internal {
+        // if showdown and countRevealed < countActive, do NOT update timestamp
+        if (stage == GameStage.Showdown && countOfHandsRevealed() < countActivePlayers()) {
+            // do not update lastActionTimestamp
+            // all players have 30 seconds to reveal their cards in showdown
+        } else {
+            lastActionTimestamp = block.timestamp;
+        }
+
         if (stage == GameStage.Idle) {
             // mark all players waiting for the next round as not joined
             for (uint8 i = 0; i < MAX_PLAYERS; i++) {
@@ -692,7 +730,7 @@ contract TexasHoldemRoom {
      * checking if the player's hand score is greater than 0
      * @return The number of hands revealed
      */
-    function countOfHandsRevealed() public returns (uint8) {
+    function countOfHandsRevealed() public view returns (uint8) {
         uint8 count = 0;
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {
             // This is set to 0 after each round,

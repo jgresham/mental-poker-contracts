@@ -241,6 +241,7 @@ contract DeckHandler {
         bool isPrivate;
         string[5] communityCards;
         bytes[] encryptedDeck;
+        uint256 lastActionTimestamp;
     }
 
     function getBulkRoomData() external view returns (BulkRoomData memory) {
@@ -257,7 +258,8 @@ contract DeckHandler {
             numPlayers: texasHoldemRoom.numPlayers(),
             isPrivate: texasHoldemRoom.isPrivate(),
             encryptedDeck: this.getEncryptedDeck(),
-            communityCards: communityCards
+            communityCards: communityCards,
+            lastActionTimestamp: texasHoldemRoom.lastActionTimestamp()
         });
     }
 }
