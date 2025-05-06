@@ -241,4 +241,19 @@ contract PokerHandEvaluatorTest is Test {
         assertEq(uint256(hand.rank), uint256(PokerHandEvaluatorv2.HandRank.TwoPair));
         assertEq(hand.score, 300000012020014);
     }
+
+    function test_causedUnderflow1PairPreviously() public view {
+        // ["2S", "7C", "3H", "2H", "5D", "10C", "8H"]
+        string[7] memory cardIndicies = ["39", "31", "1", "0", "16", "34", "6"];
+        string[7] memory cards;
+        for (uint256 i = 0; i < cardIndicies.length; i++) {
+            cards[i] = pokerHandEvaluator.stringToHumanReadable(cardIndicies[i]);
+        }
+
+        PokerHandEvaluatorv2.Hand memory hand = pokerHandEvaluator.findBestHandExternal2(cards);
+        console.log("High Card hand.rank: %s", uint256(hand.rank));
+        console.log("High Card hand.score: %s", hand.score);
+        assertEq(uint256(hand.rank), uint256(PokerHandEvaluatorv2.HandRank.Pair));
+        assertEq(hand.score, 200000002070810);
+    }
 }

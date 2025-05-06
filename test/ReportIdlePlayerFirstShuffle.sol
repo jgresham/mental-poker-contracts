@@ -68,33 +68,27 @@ contract ReportIdlePlayerFirstShuffleTest is Test {
         // time check runs before player turn check
         vm.startPrank(player1);
         vm.expectRevert("Player has 30 seconds to act");
-        room.reportIdlePlayer(1);
+        room.reportIdlePlayer();
         vm.stopPrank();
 
         vm.startPrank(player2);
         vm.expectRevert("Player has 30 seconds to act");
-        room.reportIdlePlayer(0);
+        room.reportIdlePlayer();
         vm.stopPrank();
 
-        // vm.roll(block.number + 30); // Skip ahead 30 blocks
-        vm.warp(block.timestamp + 30); // Skip ahead 30 seconds
+        vm.warp(block.timestamp + 30); // Skip ahead 30 seconds (30 seconds is the time limit, inclusive of 30 seconds)
 
         vm.startPrank(player2);
         vm.expectRevert("Player has 30 seconds to act");
-        room.reportIdlePlayer(0);
+        room.reportIdlePlayer();
         vm.stopPrank();
 
         vm.warp(block.timestamp + 1); // Skip ahead 1 more (total 31 seconds)
 
-        vm.startPrank(player1);
-        vm.expectRevert("Not the reported player's turn");
-        room.reportIdlePlayer(1);
-        vm.stopPrank();
-
         vm.startPrank(player2);
         vm.expectEmit(address(room));
         emit TexasHoldemRoom.IdlePlayerKicked(address(player2), address(player1), 31);
-        room.reportIdlePlayer(0);
+        room.reportIdlePlayer();
         vm.stopPrank();
 
         // player1 should be kicked
