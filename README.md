@@ -79,6 +79,12 @@ forge script script/DeployProd.s.sol:DeployProd --rpc-url https://sepolia.base.o
 # Base
 forge script script/DeployProd.s.sol:DeployProd --rpc-url https://mainnet.base.org --private-key $PRIVATE_KEY --chain base --verifier-url https://api.basescan.org/api --broadcast --verify
 
+# Optimism
+forge script script/DeployProd.s.sol:DeployProd --rpc-url https://mainnet.optimism.io --private-key $PRIVATE_KEY --chain optimism --verifier-url https://api-optimistic.etherscan.io/api --broadcast --verify --verifier-api-key $OP_ETHERSCAN_API_KEY
+
+# Arbitrum
+forge script script/DeployProd.s.sol:DeployProd --rpc-url https://arb1.arbitrum.io/rpc --private-key $PRIVATE_KEY --chain arbitrum --verifier-url https://api.arbiscan.io/api --broadcast --verify --verifier-api-key $ARBISCAN_API_KEY
+
 ```
 
 ## Verify if it fails after deploy
