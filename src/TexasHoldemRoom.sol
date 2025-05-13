@@ -521,14 +521,22 @@ contract TexasHoldemRoom {
         // check if it is the reported player's turn to act or if the player has already revealed their cards
         // todo: FIX! the currentPlayerIndex is not changed in showdown. kick the first active player that hasn't
         // revealed their cards?
-        bool hasPlayerRevealedCards = players[currentPlayerIndex].handScore > 0;
+        uint8 playerIndexToKick = EMPTY_SEAT;
         if (stage == GameStage.Showdown) {
-            // revert only if the player has already revealed their cards
-            require(!hasPlayerRevealedCards, "Player has already revealed their cards");
+            for (uint8 i = 0; i < MAX_PLAYERS; i++) {
+                if (
+                    players[i].addr != address(0) && !players[i].joinedAndWaitingForNextRound
+                        && !players[i].hasFolded && players[i].handScore == 0
+                ) {
+                    playerIndexToKick = i;
+                    break;
+                }
+            }
         }
-        emit IdlePlayerKicked(msg.sender, players[currentPlayerIndex].addr, timeElapsed);
+        require(playerIndexToKick != EMPTY_SEAT, "All players have revealed their cards");
+        emit IdlePlayerKicked(msg.sender, players[playerIndexToKick].addr, timeElapsed);
         // todo: split the kicked player's chips between the other active players
-        players[currentPlayerIndex].leavingAfterRoundEnds = true;
+        players[playerIndexToKick].leavingAfterRoundEnds = true;
         // same logic as: this.resetRound();
         // returns chips to players and starts a new round
         for (uint8 i = 0; i < MAX_PLAYERS; i++) {
