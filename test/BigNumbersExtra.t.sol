@@ -63,6 +63,20 @@ contract BigNumbersTest is Test {
         assertEq(resultInt, 0);
     }
 
+    // too much gas
+    // function testLargeModInverseEqualAandMSetBitLen256() public view {
+    //     BigNumber memory a = BigNumber({ val: hex"1000", neg: false, bitlen: 256 });
+    //     BigNumber memory m = BigNumber({ val: hex"1000", neg: false, bitlen: 256 });
+    //     BigNumber memory result = a.modInverse(m);
+    //     // Convert BigNumber to integer for comparison
+    //     bytes memory resultVal = result.val;
+    //     uint256 resultInt;
+    //     assembly {
+    //         resultInt := mload(add(resultVal, 0x20))
+    //     }
+    //     assertEq(resultInt, 0);
+    // }
+
     function testLargeModInverseNotEqualAandM() public view {
         BigNumber memory a = BigNumbers.init(1000000000000000000, false);
         BigNumber memory m = BigNumbers.init(1000000000000000001, false);

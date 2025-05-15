@@ -35,6 +35,31 @@ contract CryptoUtilsTest is Test {
         console.log("Test public key:", testPublicKey);
     }
 
+    function testVerifyDecryptCard256BitLen() public {
+        bytes memory c1Bytes = hex"e3d0901804344fd3346b54f8bf7013690af3d274bb579ef1c53881a513a7b30b";
+        bytes memory c2Bytes = hex"959ff3ad8fa3e605c223806961260e96539678db9c2a8201faeb6c5dc52aa0c7";
+
+        bytes memory privatekey256Bytes =
+            hex"62c1891979af2fef1fde0b30c79ade709e75289bc7c6bc6fd454a22fcee82da4";
+        bytes memory c1InverseBytes =
+            hex"485dba78f16903265d701d412292b2ed7bdb234403df26bf57e457135631ab43";
+
+        BigNumber memory privatekey2048 = BigNumbers.init(privatekey256Bytes, false, 256);
+        BigNumber memory c1Inverse = BigNumbers.init(c1InverseBytes, false, 256);
+        CryptoUtils.EncryptedCard memory encryptedCard = CryptoUtils.EncryptedCard({
+            c1: BigNumbers.init(c1Bytes, false, 256),
+            c2: BigNumbers.init(c2Bytes, false, 256)
+        });
+        // 8D card
+        bytes memory testMessageBytes =
+            hex"0000000000000000000000000000000000000000000000000000000000003139";
+
+        BigNumber memory decryptedMessage =
+            cryptoUtils.verifyDecryptCard(encryptedCard, privatekey2048, c1Inverse);
+        BigNumber memory testMessage1 = BigNumbers.init(testMessageBytes, false, 256);
+        assertEq(BigNumbers.eq(decryptedMessage, testMessage1), true);
+    }
+
     // (gas: 921,690)
     function testVerifyDecryptCardIntermediateDecryption() public {
         bytes memory c1Bytes =

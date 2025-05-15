@@ -532,8 +532,10 @@ contract TexasHoldemRoom {
                     break;
                 }
             }
+            require(playerIndexToKick != EMPTY_SEAT, "All players have revealed their cards");
+        } else {
+            playerIndexToKick = currentPlayerIndex;
         }
-        require(playerIndexToKick != EMPTY_SEAT, "All players have revealed their cards");
         emit IdlePlayerKicked(msg.sender, players[playerIndexToKick].addr, timeElapsed);
         // todo: split the kicked player's chips between the other active players
         players[playerIndexToKick].leavingAfterRoundEnds = true;

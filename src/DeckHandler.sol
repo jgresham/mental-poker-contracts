@@ -65,7 +65,7 @@ contract DeckHandler {
 
         // Copy each element individually since direct array assignment is not supported
         for (uint8 i = 0; i < encryptedShuffle.length; i++) {
-            encryptedDeck[i] = BigNumbers.init(encryptedShuffle[i], false);
+            encryptedDeck[i] = BigNumbers.init(encryptedShuffle[i], false, 256);
         }
         texasHoldemRoom.progressGame();
     }
@@ -94,7 +94,7 @@ contract DeckHandler {
         emit DecryptionValuesSubmitted(msg.sender, cardIndexes, decryptionValues);
 
         for (uint8 i = 0; i < cardIndexes.length; i++) {
-            encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false);
+            encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false, 256);
         }
 
         // The dealer always starts decrypting, so when we are back at the dealer,

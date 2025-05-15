@@ -91,6 +91,10 @@ forge script script/DeployProd.s.sol:DeployProd --rpc-url https://arb1.arbitrum.
 
 ```shell
 forge verify-contract <deployed-contract-address> src/TexasHoldemRoom.sol:TexasHoldemRoom --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY --verifier-url https://sepolia.base.org --watch
+
+forge verify-contract 0xBABEc5F06672aB06113BEC7532397bEb6a1702bc src/TexasHoldemRoom.sol:TexasHoldemRoom --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY --verifier-url https://api-sepolia.basescan.org/api --watch
+
+forge verify-contract 0xF2635f00300F16D9acA57F955091Cc24DD01F7d1 src/BigNumbers/BigNumbers.sol:BigNumbers --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY --verifier-url https://api-sepolia.basescan.org/api --watch --flatten
 ```
 
 ### Cast
