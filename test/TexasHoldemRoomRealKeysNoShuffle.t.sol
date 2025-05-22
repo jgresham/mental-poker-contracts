@@ -325,7 +325,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
     //         uint256 totalRoundBet,
     //         bool hasFolded,
     //         bool isAllIn,
-    //         uint8 seatPosition
+    //         uint256 seatPosition
     //     ) = room.players(0);
     //     assertEq(addr, player1);
     //     assertEq(chips, INITIAL_BALANCE);
@@ -410,7 +410,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         assertEq(uint256(stage2), uint256(TexasHoldemRoom.GameStage.Shuffle));
         assertEq(room.dealerPosition(), 0);
         assertEq(room.currentPlayerIndex(), 0);
-        uint8[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
+        uint256[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
         assertEq(playerCardIndexes[0], 0);
         assertEq(playerCardIndexes[1], 2);
         playerCardIndexes = room.getPlayersCardIndexes(1);
@@ -452,7 +452,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         // the encrypted values submitted are not correct at the moment
         // submit card index and decrypted value for each card
         // card 0 to p1, card 1 to p2, card 2 to p1, card 3 to p2!
-        uint8[] memory cardIndexes = new uint8[](2);
+        uint256[] memory cardIndexes = new uint256[](2);
         cardIndexes[0] = 1;
         cardIndexes[1] = 3;
         BigNumber[] memory decryptionValues = new BigNumber[](2);
@@ -549,7 +549,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         );
 
         // All players should submit their decryption values for the flop cards
-        uint8[] memory cardIndexesFlop = new uint8[](3);
+        uint256[] memory cardIndexesFlop = new uint256[](3);
         BigNumber[] memory decryptionValuesFlop = new BigNumber[](3);
         // player 1 should submit their decryption values for flop cards
         vm.startPrank(player1);
@@ -661,7 +661,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealTurn));
 
         // All players should submit their decryption values for the turn card
-        uint8[] memory cardIndexesTurn = new uint8[](1);
+        uint256[] memory cardIndexesTurn = new uint256[](1);
         BigNumber[] memory decryptionValuesTurn = new BigNumber[](1);
         // 2 players, 5th card is burned, 678 are the flop cards,
         // 9th card is burned, 10th card is the turn card
@@ -712,7 +712,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         assertEq(uint256(room.stage()), uint256(TexasHoldemRoom.GameStage.RevealRiver));
 
         // All players should submit their decryption values for the river card
-        uint8[] memory cardIndexesRiver = new uint8[](1);
+        uint256[] memory cardIndexesRiver = new uint256[](1);
         BigNumber[] memory decryptionValuesRiver = new BigNumber[](1);
         // 2 players, 9th card is burned, 10th card is the turn card
         // 11th card is burned, 12th card is the river card
@@ -797,7 +797,7 @@ contract TexasHoldemRoomRealKeysNoShuffleTest is Test {
         );
         // also expect a winner event to be emitted
         vm.expectEmit(address(room));
-        uint8[] memory winnerPlayerIndexes = new uint8[](2);
+        uint256[] memory winnerPlayerIndexes = new uint256[](2);
         winnerPlayerIndexes[0] = 0;
         winnerPlayerIndexes[1] = 1;
         address[] memory winnerAddresses = new address[](2);

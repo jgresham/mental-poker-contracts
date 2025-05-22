@@ -19,8 +19,8 @@ contract PokerHandEvaluatorv2 {
     }
 
     struct Card {
-        uint8 rank; // 2-14 (14 = AceHigh)
-        uint8 suit; // 0-3 (Hearts, Diamonds, Clubs, Spades)
+        uint256 rank; // 2-14 (14 = AceHigh)
+        uint256 suit; // 0-3 (Hearts, Diamonds, Clubs, Spades)
     }
 
     struct Hand {
@@ -29,15 +29,15 @@ contract PokerHandEvaluatorv2 {
         Card[5] bestHand;
     }
 
-    function uintToString(uint8 value) public pure returns (string memory) {
+    function uintToString(uint256 value) public pure returns (string memory) {
         // Special case for 0
         if (value == 0) {
             return "0";
         }
 
         // Find length of number by counting digits
-        uint8 length = 0;
-        uint8 temp = value;
+        uint256 length = 0;
+        uint256 temp = value;
         while (temp != 0) {
             length++;
             temp /= 10;
@@ -47,7 +47,7 @@ contract PokerHandEvaluatorv2 {
         bytes memory buffer = new bytes(length);
 
         // Fill buffer from right to left
-        uint8 i = length;
+        uint256 i = length;
         while (value != 0) {
             buffer[--i] = bytes1(uint8(48 + value % 10));
             value /= 10;
@@ -71,11 +71,11 @@ contract PokerHandEvaluatorv2 {
         require(
             bytes(cardStr).length == 1 || bytes(cardStr).length == 2, "Invalid card string length"
         );
-        uint8 cardNum = uint8(parseInt(cardStr));
+        uint256 cardNum = uint256(parseInt(cardStr));
         require(cardNum < 52, "Invalid card number");
 
-        uint8 suit = cardNum / 13;
-        uint8 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
+        uint256 suit = cardNum / 13;
+        uint256 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
 
         return Card({ rank: rank, suit: suit });
     }
@@ -92,11 +92,11 @@ contract PokerHandEvaluatorv2 {
      * - Spades: 39-51 (2-A)
      */
     function stringToHumanReadable(string memory cardStr) public pure returns (string memory) {
-        uint8 cardNum = uint8(parseInt(cardStr));
+        uint256 cardNum = uint256(parseInt(cardStr));
         require(cardNum < 52, "Invalid card number");
 
-        uint8 suit = cardNum / 13;
-        uint8 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
+        uint256 suit = cardNum / 13;
+        uint256 rank = cardNum % 13 + 2; // Add 2 because ranks start at 2
         string memory suitStr;
         if (suit <= 0) {
             suitStr = "H";
@@ -156,8 +156,8 @@ contract PokerHandEvaluatorv2 {
             }
         }
 
-        uint8 rank = uint8(parseInt(rankStr));
-        uint8 suit = 0;
+        uint256 rank = uint256(parseInt(rankStr));
+        uint256 suit = 0;
         if (strEq(suitStr, "H")) {
             suit = 0;
         } else if (strEq(suitStr, "D")) {
@@ -179,7 +179,7 @@ contract PokerHandEvaluatorv2 {
         bytes memory b = bytes(s);
         uint256 result = 0;
         for (uint256 i = 0; i < b.length; i++) {
-            uint8 c = uint8(b[i]);
+            uint256 c = uint8(b[i]);
             if (c >= 48 && c <= 57) {
                 result = result * 10 + (c - 48);
             }
@@ -238,7 +238,7 @@ contract PokerHandEvaluatorv2 {
         // Check for each hand type from highest to lowest
         Hand memory bestHand;
         uint256 score = 0;
-        uint8 rank = 0;
+        uint256 rank = 0;
 
         // Check Royal Flush
         (rank, score) = hasRoyalFlush(cards);
@@ -323,15 +323,15 @@ contract PokerHandEvaluatorv2 {
         return bestHand;
     }
 
-    function hasRoyalFlush(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        for (uint8 suit = 0; suit < 4; suit++) {
+    function hasRoyalFlush(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        for (uint256 suit = 0; suit < 4; suit++) {
             bool hasAce = false;
             bool hasKing = false;
             bool hasQueen = false;
             bool hasJack = false;
             bool hasTen = false;
 
-            for (uint8 i = 0; i < 7; i++) {
+            for (uint256 i = 0; i < 7; i++) {
                 if (cards[i].suit == suit) {
                     if (cards[i].rank == 14) hasAce = true;
                     if (cards[i].rank == 13) hasKing = true;
@@ -348,10 +348,10 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasStraightFlush(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        for (uint8 suit = 0; suit < 4; suit++) {
-            uint8[] memory suitCards = new uint8[](7);
-            uint8 suitCount = 0;
+    function hasStraightFlush(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        for (uint256 suit = 0; suit < 4; suit++) {
+            uint256[] memory suitCards = new uint256[](7);
+            uint256 suitCount = 0;
 
             for (uint256 i = 0; i < 7; i++) {
                 if (cards[i].suit == suit) {
@@ -361,10 +361,10 @@ contract PokerHandEvaluatorv2 {
             }
             if (suitCount >= 5) {
                 // Sort suit cards
-                for (uint8 i = 0; i < suitCount - 1; i++) {
-                    for (uint8 j = 0; j < suitCount - i - 1; j++) {
+                for (uint256 i = 0; i < suitCount - 1; i++) {
+                    for (uint256 j = 0; j < suitCount - i - 1; j++) {
                         if (suitCards[j] > suitCards[j + 1]) {
-                            uint8 temp = suitCards[j];
+                            uint256 temp = suitCards[j];
                             suitCards[j] = suitCards[j + 1];
                             suitCards[j + 1] = temp;
                         }
@@ -372,7 +372,7 @@ contract PokerHandEvaluatorv2 {
                 }
 
                 // Check for straight in suited cards
-                for (uint8 i = 0; i <= suitCount - 5; i++) {
+                for (uint256 i = 0; i <= suitCount - 5; i++) {
                     if (suitCards[i + 4] == suitCards[i] + 4) {
                         return (9, 9 * 10 ** 14 + suitCards[i + 4]);
                     }
@@ -382,10 +382,10 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasFourOfAKind(Card[7] memory cards) internal pure returns (uint8, uint256) {
+    function hasFourOfAKind(Card[7] memory cards) internal pure returns (uint256, uint256) {
         for (uint256 i = 0; i < 7; i++) {
-            uint8 count = 0;
-            uint8 rank = cards[i].rank;
+            uint256 count = 0;
+            uint256 rank = cards[i].rank;
 
             for (uint256 j = 0; j < 7; j++) {
                 if (cards[j].rank == rank) {
@@ -395,7 +395,7 @@ contract PokerHandEvaluatorv2 {
 
             if (count == 4) {
                 // Find highest kicker
-                uint8 kicker = 0;
+                uint256 kicker = 0;
                 for (uint256 k = 0; k < 7; k++) {
                     if (cards[k].rank != rank && cards[k].rank > kicker) {
                         kicker = cards[k].rank;
@@ -407,14 +407,14 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasFullHouse(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        uint8 threeOfAKindRank = 0;
-        uint8 pairRank = 0;
+    function hasFullHouse(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        uint256 threeOfAKindRank = 0;
+        uint256 pairRank = 0;
 
         // Find three of a kind
         for (uint256 i = 0; i < 7; i++) {
-            uint8 count = 0;
-            uint8 rank = cards[i].rank;
+            uint256 count = 0;
+            uint256 rank = cards[i].rank;
 
             for (uint256 j = 0; j < 7; j++) {
                 if (cards[j].rank == rank) {
@@ -434,8 +434,8 @@ contract PokerHandEvaluatorv2 {
         // Find pair (different from three of a kind)
         for (uint256 i = 0; i < 7; i++) {
             if (cards[i].rank != threeOfAKindRank) {
-                uint8 count = 0;
-                uint8 rank = cards[i].rank;
+                uint256 count = 0;
+                uint256 rank = cards[i].rank;
 
                 for (uint256 j = 0; j < 7; j++) {
                     if (cards[j].rank == rank) {
@@ -456,14 +456,14 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasFlush(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        uint8[5] memory flushCards;
+    function hasFlush(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        uint256[5] memory flushCards;
 
-        for (uint8 suit = 0; suit < 4; suit++) {
-            uint8[] memory suitCards = new uint8[](7);
-            uint8 suitCount = 0;
+        for (uint256 suit = 0; suit < 4; suit++) {
+            uint256[] memory suitCards = new uint256[](7);
+            uint256 suitCount = 0;
 
-            for (uint8 i = 0; i < 7; i++) {
+            for (uint256 i = 0; i < 7; i++) {
                 if (cards[i].suit == suit) {
                     suitCards[suitCount] = cards[i].rank;
                     suitCount++;
@@ -472,10 +472,10 @@ contract PokerHandEvaluatorv2 {
 
             if (suitCount >= 5) {
                 // Sort suit cards in descending order
-                for (uint8 i = 0; i < suitCount - 1; i++) {
-                    for (uint8 j = 0; j < suitCount - i - 1; j++) {
+                for (uint256 i = 0; i < suitCount - 1; i++) {
+                    for (uint256 j = 0; j < suitCount - i - 1; j++) {
                         if (suitCards[j] < suitCards[j + 1]) {
-                            uint8 temp = suitCards[j];
+                            uint256 temp = suitCards[j];
                             suitCards[j] = suitCards[j + 1];
                             suitCards[j + 1] = temp;
                         }
@@ -483,7 +483,7 @@ contract PokerHandEvaluatorv2 {
                 }
 
                 // Take the highest 5 cards
-                for (uint8 i = 0; i < 5; i++) {
+                for (uint256 i = 0; i < 5; i++) {
                     flushCards[i] = suitCards[i];
                 }
 
@@ -502,14 +502,14 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasStraight(Card[7] memory cards) internal pure returns (uint8, uint256) {
+    function hasStraight(Card[7] memory cards) internal pure returns (uint256, uint256) {
         // Remove duplicates
-        uint8[] memory uniqueRanks = new uint8[](15); // Max 14 ranks + 1 for Ace as 1
-        uint8 uniqueCount = 0;
+        uint256[] memory uniqueRanks = new uint256[](15); // Max 14 ranks + 1 for Ace as 1
+        uint256 uniqueCount = 0;
 
-        for (uint8 i = 0; i < 7; i++) {
+        for (uint256 i = 0; i < 7; i++) {
             bool isDuplicate = false;
-            for (uint8 j = 0; j < uniqueCount; j++) {
+            for (uint256 j = 0; j < uniqueCount; j++) {
                 if (uniqueRanks[j] == cards[i].rank) {
                     isDuplicate = true;
                     break;
@@ -523,7 +523,7 @@ contract PokerHandEvaluatorv2 {
         }
         // Add Ace as 1 if Ace exists
         bool hasAce = false;
-        for (uint8 i = 0; i < uniqueCount; i++) {
+        for (uint256 i = 0; i < uniqueCount; i++) {
             if (uniqueRanks[i] == 14) {
                 hasAce = true;
                 break;
@@ -535,10 +535,10 @@ contract PokerHandEvaluatorv2 {
         }
 
         // Sort ranks
-        for (uint8 i = 0; i < uniqueCount - 1; i++) {
-            for (uint8 j = 0; j < uniqueCount - i - 1; j++) {
+        for (uint256 i = 0; i < uniqueCount - 1; i++) {
+            for (uint256 j = 0; j < uniqueCount - i - 1; j++) {
                 if (uniqueRanks[j] > uniqueRanks[j + 1]) {
-                    uint8 temp = uniqueRanks[j];
+                    uint256 temp = uniqueRanks[j];
                     uniqueRanks[j] = uniqueRanks[j + 1];
                     uniqueRanks[j + 1] = temp;
                 }
@@ -547,7 +547,7 @@ contract PokerHandEvaluatorv2 {
 
         // Check for straight
         if (uniqueCount >= 5) {
-            for (uint8 i = 0; i <= uniqueCount - 5; i++) {
+            for (uint256 i = 0; i <= uniqueCount - 5; i++) {
                 if (uniqueRanks[i + 4] == uniqueRanks[i] + 4) {
                     return (5, 5 * 10 ** 14 + uint256(uniqueRanks[i + 4]));
                 }
@@ -556,12 +556,12 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasThreeOfAKind(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        uint8[2] memory kickers;
+    function hasThreeOfAKind(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        uint256[2] memory kickers;
 
         for (uint256 i = 0; i <= 4; i++) {
-            uint8 count = 1;
-            uint8 rank = cards[i].rank;
+            uint256 count = 1;
+            uint256 rank = cards[i].rank;
 
             for (uint256 j = i + 1; j < 7; j++) {
                 if (cards[j].rank == rank) {
@@ -571,7 +571,7 @@ contract PokerHandEvaluatorv2 {
 
             if (count == 3) {
                 // Find two highest kickers
-                uint8 kickerCount = 0;
+                uint256 kickerCount = 0;
 
                 // Start from the highest card and work down
                 for (int256 j = 6; j >= 0 && kickerCount < 2; j--) {
@@ -599,9 +599,9 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasTwoPair(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        uint8 highPairRank = 0;
-        uint8 lowPairRank = 0;
+    function hasTwoPair(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        uint256 highPairRank = 0;
+        uint256 lowPairRank = 0;
         // emit PHE_Log(uintToString(cards[6].rank));
         // emit PHE_Log(uintToString(cards[5].rank));
         // emit PHE_Log(uintToString(cards[4].rank));
@@ -629,7 +629,7 @@ contract PokerHandEvaluatorv2 {
         }
         if (highPairRank > 0 && lowPairRank > 0) {
             // Find highest kicker
-            uint8 kicker = 0;
+            uint256 kicker = 0;
 
             for (int256 i = 6; i >= 0; i--) {
                 if (cards[uint256(i)].rank != highPairRank && cards[uint256(i)].rank != lowPairRank)
@@ -650,9 +650,9 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasPair(Card[7] memory cards) internal pure returns (uint8, uint256) {
-        uint8[3] memory kickers;
-        uint8 pairRank = 0;
+    function hasPair(Card[7] memory cards) internal pure returns (uint256, uint256) {
+        uint256[3] memory kickers;
+        uint256 pairRank = 0;
 
         // Find pair
         for (uint256 i = 6; i > 0; i--) {
@@ -664,7 +664,7 @@ contract PokerHandEvaluatorv2 {
 
         if (pairRank > 0) {
             // Find three highest kickers
-            uint8 kickerCount = 0;
+            uint256 kickerCount = 0;
 
             for (int256 i = 6; i >= 0 && kickerCount < 3; i--) {
                 if (cards[uint256(i)].rank != pairRank) {
@@ -683,7 +683,7 @@ contract PokerHandEvaluatorv2 {
         return (0, 0);
     }
 
-    function hasHighCard(Card[7] memory cards) internal pure returns (uint8, uint256) {
+    function hasHighCard(Card[7] memory cards) internal pure returns (uint256, uint256) {
         uint256 score = 1 * 10 ** 14;
 
         // Cards are already sorted by rank, so we take the 5 highest cards

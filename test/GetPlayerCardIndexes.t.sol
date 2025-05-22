@@ -60,10 +60,10 @@ contract GetPlayerCardIndexesTest is Test {
     }
 
     function test_getPlayersCards() public {
-        uint8[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
+        uint256[2] memory playerCardIndexes = room.getPlayersCardIndexes(0);
         console.log("playerCardIndexes for playerIndex 0");
-        uint8 playerCardIndex1 = playerCardIndexes[0];
-        uint8 playerCardIndex2 = playerCardIndexes[1];
+        uint256 playerCardIndex1 = playerCardIndexes[0];
+        uint256 playerCardIndex2 = playerCardIndexes[1];
         assertEq(playerCardIndex1, 0);
         assertEq(playerCardIndex2, 2);
 

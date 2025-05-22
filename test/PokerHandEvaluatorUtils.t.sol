@@ -430,7 +430,7 @@ contract PokerHandEvaluatorUtilsTest is Test {
     }
 
     function test_uintToString() public view {
-        uint8 value = 10;
+        uint256 value = 10;
         string memory str = pokerHandEvaluator.uintToString(value);
         assertEq(str, "10");
         value = 0;

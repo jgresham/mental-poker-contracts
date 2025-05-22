@@ -18,7 +18,7 @@ contract DeckHandler {
 
     event EncryptedShuffleSubmitted(address indexed player, bytes[] encryptedShuffle);
     event DecryptionValuesSubmitted(
-        address indexed player, uint8[] cardIndexes, bytes[] decryptionValues
+        address indexed player, uint256[] cardIndexes, bytes[] decryptionValues
     );
     event FlopRevealed(string card1, string card2, string card3);
     event TurnRevealed(string card1);
@@ -47,7 +47,7 @@ contract DeckHandler {
     // called when a new round starts, only callable by the room contract
     function resetDeck() external {
         require(msg.sender == address(texasHoldemRoom), "Only the room contract can reset the deck");
-        for (uint8 i = 0; i < 52; i++) {
+        for (uint256 i = 0; i < 52; i++) {
             encryptedDeck[i] = BigNumber({ val: "0", neg: false, bitlen: 256 });
         }
         communityCards = ["", "", "", "", ""];
@@ -56,22 +56,22 @@ contract DeckHandler {
     function submitEncryptedShuffle(bytes[] memory encryptedShuffle) external {
         require(encryptedShuffle.length == 52, "Must provide exactly 52 cards");
         require(texasHoldemRoom.stage() == TexasHoldemRoom.GameStage.Shuffle, "Wrong stage");
-        uint8 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
-        uint8 currentPlayerIndex = texasHoldemRoom.currentPlayerIndex();
+        uint256 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
+        uint256 currentPlayerIndex = texasHoldemRoom.currentPlayerIndex();
         require(currentPlayerIndex == playerIndex, "Not your turn to shuffle");
 
         // Store shuffle as an action?
         emit EncryptedShuffleSubmitted(msg.sender, encryptedShuffle);
 
         // Copy each element individually since direct array assignment is not supported
-        for (uint8 i = 0; i < encryptedShuffle.length; i++) {
+        for (uint256 i = 0; i < encryptedShuffle.length; i++) {
             encryptedDeck[i] = BigNumbers.init(encryptedShuffle[i], false, 256);
         }
         texasHoldemRoom.progressGame();
     }
 
     // TODO(high): verify that the card indicies are valid for the number of players and stage
-    function submitDecryptionValues(uint8[] memory cardIndexes, bytes[] memory decryptionValues)
+    function submitDecryptionValues(uint256[] memory cardIndexes, bytes[] memory decryptionValues)
         external
     {
         TexasHoldemRoom.GameStage stage = texasHoldemRoom.stage();
@@ -82,8 +82,8 @@ contract DeckHandler {
                 || stage == TexasHoldemRoom.GameStage.RevealRiver,
             "Game is not in a reveal stage"
         );
-        uint8 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
-        uint8 currentPlayerIndex = texasHoldemRoom.currentPlayerIndex();
+        uint256 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
+        uint256 currentPlayerIndex = texasHoldemRoom.currentPlayerIndex();
         require(currentPlayerIndex == playerIndex, "Not your turn to decrypt");
         require(
             cardIndexes.length == decryptionValues.length,
@@ -93,13 +93,13 @@ contract DeckHandler {
         // TODO: verify decryption indexes?
         emit DecryptionValuesSubmitted(msg.sender, cardIndexes, decryptionValues);
 
-        for (uint8 i = 0; i < cardIndexes.length; i++) {
+        for (uint256 i = 0; i < cardIndexes.length; i++) {
             encryptedDeck[cardIndexes[i]] = BigNumbers.init(decryptionValues[i], false, 256);
         }
 
         // The dealer always starts decrypting, so when we are back at the dealer,
         // we know the last player has decrypted community cards, so emit/set the community cards
-        uint8 nextRevealPlayer = texasHoldemRoom.getNextActivePlayer(true);
+        uint256 nextRevealPlayer = texasHoldemRoom.getNextActivePlayer(true);
         if (nextRevealPlayer == texasHoldemRoom.dealerPosition()) {
             if (stage == TexasHoldemRoom.GameStage.RevealFlop) {
                 // convert the decrypted cards to a string
@@ -139,7 +139,7 @@ contract DeckHandler {
         bytes memory privateKey,
         bytes memory c1InversePowPrivateKey
     ) external returns (string memory card1, string memory card2) {
-        uint8 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
+        uint256 playerIndex = texasHoldemRoom.getPlayerIndexFromAddr(msg.sender);
         TexasHoldemRoom.Player memory player = texasHoldemRoom.getPlayer(playerIndex);
         // todo: uncomment this
         require(!player.joinedAndWaitingForNextRound, "Player not joined after round started");
@@ -155,7 +155,7 @@ contract DeckHandler {
         emit PlayerRevealingCards(msg.sender, c1, privateKey, c1InversePowPrivateKey);
         // scope block to reduce number of variables in memory (evm stack depth limited to 16 variables)
         {
-            uint8[2] memory playerCardIndexes = texasHoldemRoom.getPlayersCardIndexes(playerIndex);
+            uint256[2] memory playerCardIndexes = texasHoldemRoom.getPlayersCardIndexes(playerIndex);
             // BigNumber memory privateKeyBN = BigNumbers.init(privateKey, false, 2048);
             // BigNumber memory privateKeyBN = BigNumber({ val: privateKey, neg: false, bitlen: 256 });
             // BigNumber memory c1BN = BigNumber({ val: c1, neg: false, bitlen: 256 });
@@ -209,7 +209,7 @@ contract DeckHandler {
 
     function getEncryptedDeck() external view returns (bytes[] memory) {
         bytes[] memory deckBytes = new bytes[](encryptedDeck.length);
-        for (uint8 i = 0; i < encryptedDeck.length; i++) {
+        for (uint256 i = 0; i < encryptedDeck.length; i++) {
             deckBytes[i] = encryptedDeck[i].val;
         }
         return deckBytes;
@@ -232,12 +232,12 @@ contract DeckHandler {
         TexasHoldemRoom.GameStage stage;
         uint256 smallBlind;
         uint256 bigBlind;
-        uint8 dealerPosition;
-        uint8 currentPlayerIndex;
-        uint8 lastRaiseIndex;
+        uint256 dealerPosition;
+        uint256 currentPlayerIndex;
+        uint256 lastRaiseIndex;
         uint256 pot;
         uint256 currentStageBet;
-        uint8 numPlayers;
+        uint256 numPlayers;
         bool isPrivate;
         string[5] communityCards;
         bytes[] encryptedDeck;
