@@ -275,7 +275,7 @@ contract CryptoUtilsTest is Test {
     //     // Test with a larger message
     //     bytes memory largeMessageBytes = new bytes(256); // 2048 bits
     //     for (uint256 i = 0; i < 256; i++) {
-    //         largeMessageBytes[i] = bytes1(uint8(i % 256));
+    //         largeMessageBytes[i] = bytes1(uint256(i % 256));
     //     }
     //     BigNumber memory largeMessage = BigNumbers.init(largeMessageBytes, false);
     //     console.log("Large message:");
